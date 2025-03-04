@@ -1,5 +1,4 @@
 import { configureStore } from '@reduxjs/toolkit';
-import userReducer from './userSlice';
 import themeReducer from './themeSlice';
 import authSlice from './authSlice';
 import errorSlice from './errorSlice';
@@ -23,7 +22,6 @@ const store = configureStore({
         cart: cartSlice,
         analytics: analyticsSlice,
         auth: authSlice,
-        user: userReducer,
     },
 });
 
