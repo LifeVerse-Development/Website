@@ -1,1 +1,17 @@
-# Changelog
+CHANGELOG
+
+All changes in the LifeVerse Website project are documented here.
+
+[1.0.0] - YYYY-MM-DD
+  Added:
+    First release of the LifeVerse Website.
+    Implementation of main pages and navigation.
+  Changed:
+    Changes to design and user interface.
+  Fixed:
+    All bugs and issues fixed in this version.
+
+[0.1.0] - YYYY-MM-DD
+  Added:
+    Basic structure and first pages of the website.
+    Integration of basic functions and layouts.
