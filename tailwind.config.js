@@ -3,28 +3,25 @@ module.exports = {
   content: [
     "./src/**/*.{html,js,jsx,ts,tsx}",
   ],
-  darkMode: 'class', // Dark mode is enabled via 'class'
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // Colors for Light Mode
-        lightBackground: '#f9fafb', // Light background
-        lightText: '#1a202c', // Dark text color
+        lightBackground: '#f9fafb',
+        lightText: '#1a202c',
 
-        // Colors for Dark Mode
-        darkBackground: '#1a202c', // Dark background
-        darkText: '#e2e8f0', // Light text color
+        darkBackground: '#1a202c',
+        darkText: '#e2e8f0',
 
-        // Additional color extensions
-        primary: '#4CAF50', // Example for a primary color
-        secondary: '#FF5722', // Example for a secondary color
-        accent: '#FFC107', // Accent color
+        primary: '#4CAF50',
+        secondary: '#FF5722',
+        accent: '#FFC107',
       },
       animation: {
-        spinSlow: 'spin 20s infinite linear', // Slow spin animation
-        fadeIn: 'fadeIn 1s ease-in', // Fade-in animation
-        slideIn: 'slideIn 0.5s ease-out', // Slide-in animation
-        bounce: 'bounce 1s infinite', // Bounce animation
+        spinSlow: 'spin 20s infinite linear',
+        fadeIn: 'fadeIn 1s ease-in',
+        slideIn: 'slideIn 0.5s ease-out',
+        bounce: 'bounce 1s infinite',
       },
       keyframes: {
         fadeIn: {
@@ -41,17 +38,17 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'], // Example for a sans-serif font
-        serif: ['Georgia', 'serif'], // Example for a serif font
+        sans: ['Inter', 'sans-serif'],
+        serif: ['Georgia', 'serif'],
       },
       spacing: {
-        '128': '32rem', // Example for custom spacing
+        '128': '32rem',
         '144': '36rem',
       },
       boxShadow: {
-        default: '0 2px 4px rgba(0, 0, 0, 0.1)', // Default shadow
-        md: '0 4px 6px rgba(0, 0, 0, 0.1)', // Medium shadow
-        lg: '0 10px 15px rgba(0, 0, 0, 0.1)', // Large shadow
+        default: '0 2px 4px rgba(0, 0, 0, 0.1)',
+        md: '0 4px 6px rgba(0, 0, 0, 0.1)',
+        lg: '0 10px 15px rgba(0, 0, 0, 0.1)',
       },
     },
   },

@@ -8,28 +8,33 @@ const ThemeToggle: React.FC = () => {
     const theme = useSelector((state: RootState) => state.theme.theme);
 
     useEffect(() => {
-        const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-        if (savedTheme) {
-            dispatch(setTheme(savedTheme));
-        } else {
-            dispatch(setTheme('light'));
+        const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+
+        if (storedTheme && storedTheme !== theme) {
+            dispatch(setTheme(storedTheme));
         }
-    }, [dispatch]);
+    }, [dispatch, theme]);
 
     useEffect(() => {
-        localStorage.setItem('theme', theme);
+        if (theme) {
+            localStorage.setItem('theme', theme);
 
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
         }
     }, [theme]);
 
+    const handleThemeToggle = () => {
+        dispatch(toggleTheme());
+    };
+
     return (
         <button
-            onClick={() => dispatch(toggleTheme())}
-            className="p-2 rounded-md focus:outline-none"
+            onClick={handleThemeToggle}
+            className="p-2 rounded-md focus:outline-none bg-primary text-lightText dark:bg-secondary dark:text-darkText"
         >
             {theme === 'light' ? (
                 <svg

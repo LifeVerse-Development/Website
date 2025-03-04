@@ -10,7 +10,12 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s, color 0.3s;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+body.slide-out {
+  transform: translateX(-100%);
+  opacity: 0;
 }
 
 code {

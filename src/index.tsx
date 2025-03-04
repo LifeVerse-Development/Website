@@ -32,6 +32,8 @@ const Status = lazy(() => import('./pages/Status'));
 const Economy = lazy(() => import('./pages/Economy'));
 const Login = lazy(() => import('./pages/Login'));
 
+const Documentation = lazy(() => import('./pages/Documentation'));
+
 /* Users Routes (Required Authentication) */
 const Profile = lazy(() => import('./pages/users/Profile'));
 const PaymentHistory = lazy(() => import('./pages/users/PaymentHistory'));
@@ -514,6 +516,22 @@ root.render(
                   url="https://www.lifeversegame.com/legal/cookie_policy"
                 >
                   <CookiePolicy />
+                </MetaTags>
+              }
+            />
+
+            <Route
+              path="/documentation"
+              element={
+                <MetaTags
+                  title="Documentation"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/documentation"
+                >
+                  <Documentation />
                 </MetaTags>
               }
             />
