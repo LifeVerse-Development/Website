@@ -1,8 +1,10 @@
 "use client";
 
 import React from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const blogPosts = [
   {
@@ -29,9 +31,9 @@ const blogPosts = [
 ];
 
 const BlogView: React.FC = () => {
-  const params = useParams();
-  const router = useRouter();
-  const post = blogPosts.find((p) => p.id === Number(params.id));
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const post = blogPosts.find((p) => p.id === Number(id));
 
   if (!post) {
     return (
@@ -42,21 +44,25 @@ const BlogView: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
-      <motion.button
-        onClick={() => router.back()}
-        whileHover={{ scale: 1.05 }}
-        className="mb-4 px-4 py-2 bg-gray-800 text-white rounded-lg shadow-md"
-      >
-        Zurück
-      </motion.button>
+    <div>
+      <Navbar />
+      <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
+        <motion.button
+          onClick={() => navigate(-1)}
+          whileHover={{ scale: 1.05 }}
+          className="mb-4 px-4 py-2 bg-gray-800 text-white rounded-lg shadow-md"
+        >
+          Zurück
+        </motion.button>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
-        <img src={post.image} alt={post.title} className="w-full h-64 object-cover rounded-lg shadow-md" />
-        <h1 className="text-3xl font-bold mt-4">{post.title}</h1>
-        <p className="text-gray-600 dark:text-gray-400 text-sm">{post.date}</p>
-        <p className="mt-4 text-gray-700 dark:text-gray-300">{post.content}</p>
-      </motion.div>
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="max-w-3xl mx-auto">
+          <img src={post.image} alt={post.title} className="w-full h-64 object-cover rounded-lg shadow-md" />
+          <h1 className="text-3xl font-bold mt-4">{post.title}</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">{post.date}</p>
+          <p className="mt-4 text-gray-700 dark:text-gray-300">{post.content}</p>
+        </motion.div>
+      </div>
+      <Footer />
     </div>
   );
 };

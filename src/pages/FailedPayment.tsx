@@ -2,10 +2,11 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
+import Footer from "../components/Footer";
 
 const FailedPayment: React.FC = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-red-50 dark:bg-red-900 text-red-900 dark:text-red-100 flex items-center justify-center p-6">
@@ -20,11 +21,12 @@ const FailedPayment: React.FC = () => {
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
           className="px-6 py-3 bg-red-600 text-white font-bold rounded-lg shadow-md"
-          onClick={() => router.push("/cart")}
+          onClick={() => navigate("/cart")}
         >
           Zurück zum Warenkorb
         </motion.button>
       </motion.div>
+      <Footer />
     </div>
   );
 };

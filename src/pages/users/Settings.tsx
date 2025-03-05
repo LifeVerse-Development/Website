@@ -1,9 +1,12 @@
 import React from "react";
+import Navbar from "../../components/Navbar";
+import Footer from "../../components/Footer";
 
 const Settings: React.FC = () => {
     return (
-        <div className="">
-
+        <div>
+            <Navbar />
+            <Footer />
         </div>
     );
 };

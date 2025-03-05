@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+
+import Footer from "../components/Footer";
 
 interface CartItem {
   id: number;
@@ -19,7 +21,7 @@ const initialCart: CartItem[] = [
 
 const Cart: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>(initialCart);
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const updateQuantity = (id: number, amount: number) => {
     setCart((prev) =>
@@ -89,13 +91,14 @@ const Cart: React.FC = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="mt-4 px-6 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md"
-              onClick={() => router.push("/checkout")}
+              onClick={() => navigate("/checkout")}
             >
               Zur Kasse
             </motion.button>
           </div>
         </>
       )}
+      <Footer />
     </div>
   );
 };

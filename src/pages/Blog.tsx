@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 interface BlogPost {
   id: number;
@@ -37,30 +39,34 @@ const blogPosts: BlogPost[] = [
 ];
 
 const Blog: React.FC = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
-      <h1 className="text-3xl font-bold mb-6 text-center">LifeVerse Blog</h1>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {blogPosts.map((post) => (
-          <motion.div
-            key={post.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden cursor-pointer"
-            onClick={() => router.push(`/blog/${post.id}`)}
-          >
-            <img src={post.image} alt={post.title} className="w-full h-48 object-cover" />
-            <div className="p-4">
-              <h2 className="text-xl font-semibold">{post.title}</h2>
-              <p className="text-gray-600 dark:text-gray-300 text-sm">{post.date}</p>
-              <p className="text-gray-700 dark:text-gray-400 mt-2">{post.description}</p>
-            </div>
-          </motion.div>
-        ))}
+    <div>
+      <Navbar />
+      <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold mb-6 text-center">LifeVerse Blog</h1>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {blogPosts.map((post) => (
+            <motion.div
+              key={post.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.02 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden cursor-pointer"
+              onClick={() => navigate(`/news/${post.id}`)}
+            >
+              <img src={post.image} alt={post.title} className="w-full h-48 object-cover" />
+              <div className="p-4">
+                <h2 className="text-xl font-semibold">{post.title}</h2>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">{post.date}</p>
+                <p className="text-gray-700 dark:text-gray-400 mt-2">{post.description}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };

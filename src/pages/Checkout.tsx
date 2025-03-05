@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 
+import Footer from "../components/Footer";
+
 const Checkout: React.FC = () => {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
 
   const handlePayment = () => {
@@ -13,7 +15,7 @@ const Checkout: React.FC = () => {
     setTimeout(() => {
       setIsLoading(false);
       alert("✅ Bestellung erfolgreich! (Simuliert)");
-      router.push("/store");
+      navigate("/store");
     }, 2000);
   };
 
@@ -52,6 +54,7 @@ const Checkout: React.FC = () => {
           {isLoading ? "Verarbeite Zahlung..." : "Jetzt bezahlen"}
         </motion.button>
       </div>
+      <Footer />
     </div>
   );
 };
