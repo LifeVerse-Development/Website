@@ -2,7 +2,9 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { CheckCircleIcon, XCircleIcon, ExclamationCircleIcon } from "@heroicons/react/solid";
+import { CheckCircleIcon, XCircleIcon, ExclamationCircleIcon } from "@heroicons/react/24/solid";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 interface SystemStatus {
   id: number;
@@ -33,27 +35,31 @@ const getStatusInfo = (status: SystemStatus["status"]) => {
 
 const Status: React.FC = () => {
   return (
-    <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
-      <h1 className="text-3xl font-bold mb-6 text-center">System Status</h1>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {systems.map((system) => {
-          const { color, icon } = getStatusInfo(system.status);
-          return (
-            <motion.div
-              key={system.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex items-center justify-between"
-            >
-              <div>
-                <h2 className="text-xl font-semibold">{system.name}</h2>
-                <p className={`text-sm ${color}`}>{system.status.toUpperCase()}</p>
-              </div>
-              {icon}
-            </motion.div>
-          );
-        })}
+    <div>
+      <Navbar />
+      <div className="min-h-screen p-6 bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-bold mb-6 text-center">System Status</h1>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {systems.map((system) => {
+            const { color, icon } = getStatusInfo(system.status);
+            return (
+              <motion.div
+                key={system.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 flex items-center justify-between"
+              >
+                <div>
+                  <h2 className="text-xl font-semibold">{system.name}</h2>
+                  <p className={`text-sm ${color}`}>{system.status.toUpperCase()}</p>
+                </div>
+                {icon}
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };
