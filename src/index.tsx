@@ -413,6 +413,24 @@ root.render(
               }
             />
 
+            <Route
+              path="/control-panel"
+              element={
+                <ProtectedRoute>
+                  <MetaTags
+                    title="Dashboard"
+                    description="Learn more about our website and our mission."
+                    keywords="about, company, mission"
+                    author="LifeVerse"
+                    image="/images/about.jpg"
+                    url="https://www.lifeversegame.com/control-panel"
+                  >
+                    <Dashboard />
+                  </MetaTags>
+                </ProtectedRoute>
+              }
+            />
+
             {/* Guidelines & Terms */}
             <Route
               path="/guidelines"
