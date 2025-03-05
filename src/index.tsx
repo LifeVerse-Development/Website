@@ -12,6 +12,7 @@ import { LogService } from './services/logService';
 
 import { MetaTags } from './components/MetaTags';
 import LazyLoading from './components/LazyLoading';
+import ControlPanel from './pages/dashboard/ControlPanel';
 
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Home = lazy(() => import('./pages/Home'));
@@ -398,36 +399,32 @@ root.render(
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
-                  <MetaTags
-                    title="Dashboard"
-                    description="Learn more about our website and our mission."
-                    keywords="about, company, mission"
-                    author="LifeVerse"
-                    image="/images/about.jpg"
-                    url="https://www.lifeversegame.com/dashboard"
-                  >
-                    <Dashboard />
-                  </MetaTags>
-                </ProtectedRoute>
+                <MetaTags
+                  title="Dashboard"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/dashboard"
+                >
+                  <Dashboard />
+                </MetaTags>
               }
             />
 
             <Route
               path="/control-panel"
               element={
-                <ProtectedRoute>
-                  <MetaTags
-                    title="Dashboard"
-                    description="Learn more about our website and our mission."
-                    keywords="about, company, mission"
-                    author="LifeVerse"
-                    image="/images/about.jpg"
-                    url="https://www.lifeversegame.com/control-panel"
-                  >
-                    <Dashboard />
-                  </MetaTags>
-                </ProtectedRoute>
+                <MetaTags
+                  title="Control Panel"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/control-panel"
+                >
+                  <ControlPanel />
+                </MetaTags>
               }
             />
 
