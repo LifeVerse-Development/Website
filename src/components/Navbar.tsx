@@ -56,7 +56,7 @@ const Navbar: React.FC = () => {
                         className="sm:ml-16 ml-10"
                     >
                         <img
-                            src="logo.png"
+                            src="/logo.png"
                             alt="LifeVerse Logo"
                             className="h-10 w-auto transition-transform duration-300 ease-in-out hover:rotate-180"
                         />

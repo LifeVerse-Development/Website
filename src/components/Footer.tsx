@@ -25,7 +25,7 @@ const Footer: React.FC = () => {
                                 className="flex items-center"
                             >
                                 <img
-                                    src="logo.png"
+                                    src="/logo.png"
                                     alt="Logo"
                                     className="h-10 w-13 mr-3 transition-all duration-300 transform hover:scale-110 hover:animate-bounce"
                                 />
