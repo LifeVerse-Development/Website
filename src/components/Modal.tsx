@@ -1,13 +1,31 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { closeModal } from '../stores/modalSlice';
+import { RootState } from '../stores/store';
 
 interface ModalProps {
-    isOpen: boolean;
-    onClose: () => void;
     title: string;
     children: React.ReactNode;
 }
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+const Modal: React.FC<ModalProps> = ({ title, children }) => {
+    const dispatch = useDispatch();
+    const { isOpen } = useSelector((state: RootState) => state.modal);
+
+    const onClose = () => {
+        dispatch(closeModal());
+    };
+
+    useEffect(() => {
+        if (!isOpen) return;
+
+        const timer = setTimeout(() => {
+            dispatch(closeModal());
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }, [isOpen, dispatch]);
+
     if (!isOpen) return null;
 
     return (

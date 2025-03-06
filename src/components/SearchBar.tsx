@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setQuery, clearQuery } from '../stores/searchSlice';
 
@@ -12,6 +12,10 @@ const SearchBar: React.FC = () => {
     const dispatch = useDispatch();
     const query = useSelector((state: RootState) => state.search.query);
     const [inputValue, setInputValue] = useState(query);
+
+    useEffect(() => {
+        setInputValue(query);
+    }, [query]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setInputValue(e.target.value);

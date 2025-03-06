@@ -1,17 +1,35 @@
 import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { startLoading, stopLoading } from '../stores/loadingSlice';
+
+interface RootState {
+    loading: {
+        isLoading: boolean;
+    };
+}
 
 interface LoadingButtonProps {
-    isLoading: boolean;
     label: string;
     onClick: () => void;
     className: string;
 }
 
-const LoadingButton: React.FC<LoadingButtonProps> = ({ isLoading, label, onClick, className }) => {
+const LoadingButton: React.FC<LoadingButtonProps> = ({ label, onClick, className }) => {
+    const dispatch = useDispatch();
+    const isLoading = useSelector((state: RootState) => state.loading.isLoading);
+
+    const handleClick = () => {
+        dispatch(startLoading());
+        onClick();
+        setTimeout(() => {
+            dispatch(stopLoading());
+        }, 2000);
+    };
+
     return (
         <button
             className={`inline-flex h-12 items-center justify-center gap-2.5 rounded-lg ${className}`}
-            onClick={onClick}
+            onClick={handleClick}
             disabled={isLoading}
         >
             {isLoading ? (

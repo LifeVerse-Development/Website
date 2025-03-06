@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { login } from "../stores/authSlice";
-import { useLocalStorage } from "../hooks/useLocalStorage";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
@@ -12,14 +11,17 @@ const Login: React.FC = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(false);
-    const [storedUser, setStoredUser] = useLocalStorage<{ id: string; username: string; name: string; email: string } | null>("user", null);
 
     useEffect(() => {
-        if (storedUser) {
-            dispatch(login(storedUser));
-            navigate("/dashboard");
+        const storedAuth = localStorage.getItem('authState');
+        if (storedAuth) {
+            const authState = JSON.parse(storedAuth);
+            if (authState.isAuthenticated && authState.user) {
+                dispatch(login(authState.user));
+                navigate(`/profile/${authState?.username}`);
+            }
         }
-    }, [storedUser, dispatch, navigate]);
+    }, [dispatch, navigate]);
 
     const handleDiscordLogin = () => {
         setIsLoading(true);
@@ -31,11 +33,11 @@ const Login: React.FC = () => {
         const user = urlParams.get("user");
         if (user) {
             const userData = JSON.parse(user);
-            setStoredUser(userData);
+            localStorage.setItem('authState', JSON.stringify({ isAuthenticated: true, user: userData }));
             dispatch(login(userData));
-            navigate("/dashboard");
+            navigate(`/profile/${userData?.username}`);
         }
-    }, [navigate, dispatch, setStoredUser]);
+    }, [navigate, dispatch]);
 
     return (
         <div>

@@ -13,18 +13,16 @@ const Notification: React.FC = () => {
     const dispatch = useDispatch();
     const { message, type } = useSelector((state: RootState) => state.notification);
 
-    // Close notification after 5 seconds
     useEffect(() => {
         if (message) {
             const timer = setTimeout(() => {
                 dispatch(clearNotification());
             }, 5000);
 
-            return () => clearTimeout(timer); // Clean up timer on component unmount
+            return () => clearTimeout(timer);
         }
     }, [message, dispatch]);
 
-    // Style classes based on notification type
     const notificationClass = type
         ? `p-4 rounded-md text-white ${type === 'success' ? 'bg-green-500' : type === 'warn' ? 'bg-yellow-500' : type === 'info' ? 'bg-blue-500' : 'bg-red-500'}`
         : '';
