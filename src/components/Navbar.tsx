@@ -84,7 +84,7 @@ const Navbar: React.FC = () => {
 
                     <div className="flex items-center space-x-4">
                         {!isAuthenticated ? (
-                            <Link to={`/login`} className="block px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-600">
+                            <Link to={`/login`} className="hover:scale-110 hover:animate-bounce px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 hover:bg-yellow-500 hover:text-white">
                                 Login
                             </Link>
                         ) : (
