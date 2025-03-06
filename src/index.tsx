@@ -4,9 +4,8 @@ import './assets/styles/index.css';
 import React, { JSX, lazy, Suspense, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Provider } from "react-redux";
-import store from "./stores/store";
-import { useLocalStorage } from './hooks/useLocalStorage';
+import { Provider, useSelector } from "react-redux";
+import store, { RootState } from './stores/store';
 
 import { LogService } from './services/logService';
 
@@ -41,6 +40,7 @@ const Settings = lazy(() => import('./pages/users/Settings'));
 
 /* Dashboard Changed by Role */
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
+const ControlPanel = lazy(() => import('./pages/dashboard/ControlPanel'))
 
 /* Guidelines & Terms */
 const Guidelines = lazy(() => import('./pages/Guidelines'));
@@ -68,9 +68,9 @@ const LogRouteChanges = () => {
 };
 
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const [storedUser] = useLocalStorage<{ id: string; username: string; name: string; email: string } | null>("user", null);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
-  if (!storedUser) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
@@ -343,7 +343,7 @@ root.render(
 
             {/* Users Routes (Required Authentication) */}
             <Route
-              path={`/profile/:id`}
+              path={`/profile/:username`}
               element={
                 <ProtectedRoute>
                   <MetaTags
@@ -352,7 +352,7 @@ root.render(
                     keywords="profile, user, account"
                     author="LifeVerse"
                     image="/images/profile.jpg"
-                    url={`https://www.lifeversegame.com/profile/:id`}
+                    url={`https://www.lifeversegame.com/profile/:userId`}
                   >
                     <Profile />
                   </MetaTags>
@@ -360,7 +360,7 @@ root.render(
               }
             />
             <Route
-              path={`/profile/:id/payment_history`}
+              path={`/profile/:username/payment_history`}
               element={
                 <ProtectedRoute>
                   <MetaTags
@@ -369,7 +369,7 @@ root.render(
                     keywords="payment, history, transactions"
                     author="LifeVerse"
                     image="/images/payment.jpg"
-                    url={`https://www.lifeversegame.com/profile/:id/payment_history`}
+                    url={`https://www.lifeversegame.com/profile/:userId/payment_history`}
                   >
                     <PaymentHistory />
                   </MetaTags>
@@ -377,7 +377,7 @@ root.render(
               }
             />
             <Route
-              path={`/profile/:id/settings`}
+              path={`/profile/:username/settings`}
               element={
                 <ProtectedRoute>
                   <MetaTags
@@ -386,7 +386,7 @@ root.render(
                     keywords="settings, account, preferences"
                     author="LifeVerse"
                     image="/images/settings.jpg"
-                    url={`https://www.lifeversegame.com/profile/:id/settings`}
+                    url={`https://www.lifeversegame.com/profile/:userId/settings`}
                   >
                     <Settings />
                   </MetaTags>
@@ -398,18 +398,32 @@ root.render(
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
-                  <MetaTags
-                    title="Dashboard"
-                    description="Learn more about our website and our mission."
-                    keywords="about, company, mission"
-                    author="LifeVerse"
-                    image="/images/about.jpg"
-                    url="https://www.lifeversegame.com/dashboard"
-                  >
-                    <Dashboard />
-                  </MetaTags>
-                </ProtectedRoute>
+                <MetaTags
+                  title="Dashboard"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/dashboard"
+                >
+                  <Dashboard />
+                </MetaTags>
+              }
+            />
+
+            <Route
+              path="/control-panel"
+              element={
+                <MetaTags
+                  title="Control Panel"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/control-panel"
+                >
+                  <ControlPanel />
+                </MetaTags>
               }
             />
 

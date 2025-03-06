@@ -1,11 +1,21 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+const getStoredPageViews = (): number => {
+    if (typeof window !== 'undefined') {
+        const storedPageViews = localStorage.getItem('pageViews');
+        if (storedPageViews) {
+            return parseInt(storedPageViews, 10);
+        }
+    }
+    return 0;
+};
+
 interface AnalyticsState {
     pageViews: number;
 }
 
 const initialState: AnalyticsState = {
-    pageViews: 0,
+    pageViews: getStoredPageViews(),
 };
 
 const analyticsSlice = createSlice({
@@ -14,6 +24,7 @@ const analyticsSlice = createSlice({
     reducers: {
         incrementPageViews: (state) => {
             state.pageViews += 1;
+            localStorage.setItem('pageViews', state.pageViews.toString());
         },
     },
 });

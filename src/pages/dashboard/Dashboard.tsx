@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Line } from "react-chartjs-2";
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import ThemeToggle from "../../components/ThemeToggle";
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -94,6 +95,7 @@ const Dashboard: React.FC = () => {
               <ChevronDownIcon className="w-5 h-5" />
             </button>
           </div>
+          <ThemeToggle />
         </motion.header>
 
         {/* Main Content Area */}

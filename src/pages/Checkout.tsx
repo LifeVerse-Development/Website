@@ -3,18 +3,36 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "../stores/store";
+import { clearCart } from "../stores/cartSlice";
 import Footer from "../components/Footer";
 
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
+
+  const { currency } = useSelector((state: RootState) => state.preferences);
+  const cart = useSelector((state: RootState) => state.cart.items);
+
+  const totalPrice = cart.reduce((total, item) => total + item.price * item.quantity, 0);
+  
+  const exchangeRates: { [key: string]: number } = {
+    EUR: 1,
+    USD: 1.1,
+    GBP: 0.85,
+  };
+
+  const exchangeRate = exchangeRates[currency as keyof typeof exchangeRates] || exchangeRates.EUR;
+  const totalPriceInSelectedCurrency = totalPrice * exchangeRate;
 
   const handlePayment = () => {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
       alert("✅ Bestellung erfolgreich! (Simuliert)");
+      dispatch(clearCart());
       navigate("/store");
     }, 2000);
   };
@@ -26,11 +44,16 @@ const Checkout: React.FC = () => {
       <div className="max-w-md mx-auto bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
         <h2 className="text-lg font-semibold mb-2">🛍 Bestellübersicht</h2>
         <ul className="mb-4 text-gray-700 dark:text-gray-300">
-          <li>✅ LifeVerse Premium Pass - 29,99€</li>
-          <li>✅ In-Game Währung (10.000 Coins) - 9,99€</li>
+          {cart.map((item) => (
+            <li key={item.id}>
+              ✅ {item.name} - {item.price.toFixed(2)} {currency} ({item.quantity}x)
+            </li>
+          ))}
         </ul>
 
-        <p className="text-lg font-semibold">Gesamt: 39,98€</p>
+        <p className="text-lg font-semibold">
+          Gesamt: {totalPriceInSelectedCurrency.toFixed(2)} {currency}
+        </p>
 
         <h2 className="text-lg font-semibold mt-4">🔒 Zahlungsinformationen</h2>
         <input
