@@ -6,11 +6,11 @@ const getStoredPreferences = (): { language: string; currency: string } => {
         const storedCurrency = localStorage.getItem('currency');
 
         return {
-            language: storedLanguage ? storedLanguage : 'en',
-            currency: storedCurrency ? storedCurrency : 'USD',
+            language: storedLanguage ? storedLanguage : 'de',
+            currency: storedCurrency ? storedCurrency : 'EUR',
         };
     }
-    return { language: 'en', currency: 'USD' };
+    return { language: 'de', currency: 'EUR' };
 };
 
 interface PreferencesState {
