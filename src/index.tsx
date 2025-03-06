@@ -11,7 +11,6 @@ import { LogService } from './services/logService';
 
 import { MetaTags } from './components/MetaTags';
 import LazyLoading from './components/LazyLoading';
-import ControlPanel from './pages/dashboard/ControlPanel';
 
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Home = lazy(() => import('./pages/Home'));
@@ -41,6 +40,7 @@ const Settings = lazy(() => import('./pages/users/Settings'));
 
 /* Dashboard Changed by Role */
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
+const ControlPanel = lazy(() => import('./pages/dashboard/ControlPanel'))
 
 /* Guidelines & Terms */
 const Guidelines = lazy(() => import('./pages/Guidelines'));
