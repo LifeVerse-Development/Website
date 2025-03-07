@@ -1,28 +1,83 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState } from "../../stores/store";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import { login } from "../../stores/authSlice";
+import axios from 'axios';
 
-// Dummy data for profile
-const dummyProfile = {
-  username: "JohnDoe",
-  email: "johndoe@example.com",
-  bio: "Game enthusiast. Passionate about life simulation games.",
-  profileImage: "/images/profile.jpg", // Example image path
-  coverImage: "/images/cover.jpg", // Example image path
-  followers: 230,
-  following: 180,
-  posts: 45,
-};
+interface User {
+  identifier: string;
+  socketId: string;
+  accessToken: string;
+  refreshToken: string;
+  userId: string;
+  titlePicture?: string;
+  profilePicture?: string;
+  email?: string;
+  username: string;
+  role: string;
+  bio?: string;
+  follower?: string[];
+  following?: string[];
+  posts?: any[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const Profile: React.FC = () => {
+  const dispatch = useDispatch();
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState(dummyProfile);
+  const [profileData, setProfileData] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isFollowing, setIsFollowing] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.userId) {
+      axios
+        .get(`http://localhost:3001/api/users/${user.userId}`, {
+          headers: {
+            'Access-Control-Allow-Origin': '*',
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+        })
+        .then((response) => {
+          const fetchedProfileData: User = {
+            ...response.data,
+            posts: response.data.posts || [],
+            follower: response.data.follower?.map((follower: { userId: string }) => follower.userId) || [],
+            following: response.data.following?.map((following: { userId: string }) => following.userId) || [],
+          };
+          setProfileData(fetchedProfileData);
+          setIsFollowing(fetchedProfileData.follower?.includes(user.userId) || false);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error("Error fetching user data: ", error);
+          setLoading(false);
+        });
+    }
+  }, [isAuthenticated, user]);
+
+  if (!isAuthenticated) {
+    return (
+      <div>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center text-xl">
+          Please log in to view your profile.
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   const handleProfileUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    // Here, you would typically send a request to the server to update the profile data
+    dispatch(login(profileData!));
     setIsEditing(false);
   };
 
@@ -31,37 +86,62 @@ const Profile: React.FC = () => {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (type === "profile") {
-          setProfileData({ ...profileData, profileImage: reader.result as string });
-        } else {
-          setProfileData({ ...profileData, coverImage: reader.result as string });
-        }
+        setProfileData((prev) => (prev ? {
+          ...prev,
+          [type === "profile" ? "profilePicture" : "titlePicture"]: reader.result as string,
+        } : prev));
       };
       reader.readAsDataURL(file);
     }
   };
+
+  const handleFollowToggle = async () => {
+    try {
+      if (isFollowing) {
+        await axios.post(`http://localhost:3001/api/users/${user?.userId}/unfollow`, {}, { headers: {
+          Authorization: `Bearer ${user?.accessToken}`,
+          'Access-Control-Allow-Origin': '*',
+          'X-CSRF-TOKEN': 'X-CSRF-TOKEN'
+        } });
+        setIsFollowing(false);
+      } else {
+        await axios.post(`http://localhost:3001/api/users/${user?.userId}/follow`, {}, { headers: {
+          Authorization: `Bearer ${user?.accessToken}`,
+          'Access-Control-Allow-Origin': '*',
+          'X-CSRF-TOKEN': 'X-CSRF-TOKEN'
+        } });
+        setIsFollowing(true);
+      }
+    } catch (error) {
+      console.error("Error following/unfollowing user:", error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <Navbar />
+        <div className="min-h-screen flex items-center justify-center text-xl">
+          Loading profile...
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div>
       <Navbar />
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
         <div className="max-w-7xl mx-auto p-6">
-          {/* Profile Header */}
           <div className="relative">
-            <div className="w-full h-64 bg-cover bg-center rounded-lg" style={{ backgroundImage: `url(${profileData.coverImage})` }}>
-              {/* Cover Image */}
+            <div className="w-full h-64 bg-cover bg-center rounded-lg" style={{ backgroundImage: `url(${profileData?.titlePicture || "/images/cover.jpg"})` }}>
               {isEditing && (
                 <div className="absolute top-0 right-0 p-4">
                   <label htmlFor="cover-image" className="bg-blue-600 text-white px-4 py-2 rounded-md cursor-pointer">
-                    Change Cover Image
+                    Change cover
                   </label>
-                  <input
-                    type="file"
-                    id="cover-image"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleImageChange(e, "cover")}
-                  />
+                  <input type="file" id="cover-image" accept="image/*" className="hidden" onChange={(e) => handleImageChange(e, "cover")} />
                 </div>
               )}
             </div>
@@ -69,7 +149,7 @@ const Profile: React.FC = () => {
             <div className="absolute bottom-[-40px] left-4">
               <div className="relative">
                 <img
-                  src={profileData.profileImage}
+                  src={profileData?.profilePicture || "/images/profile.jpg"}
                   alt="Profile"
                   className="w-32 h-32 rounded-full border-4 border-white"
                 />
@@ -78,67 +158,48 @@ const Profile: React.FC = () => {
                     <label htmlFor="profile-image" className="text-white">+</label>
                   </div>
                 )}
-                <input
-                  type="file"
-                  id="profile-image"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => handleImageChange(e, "profile")}
-                />
+                <input type="file" id="profile-image" accept="image/*" className="hidden" onChange={(e) => handleImageChange(e, "profile")} />
               </div>
             </div>
           </div>
-
-          {/* Profile Info */}
-          <div className="mt-24">
-            <div className="text-center">
-              <h2 className="text-3xl font-semibold text-gray-900 dark:text-white">{profileData.username}</h2>
-              <p className="text-gray-700 dark:text-gray-300">{profileData.bio}</p>
-              <div className="mt-4 flex justify-center space-x-6">
-                <div>
-                  <span className="font-semibold text-gray-900 dark:text-white">{profileData.posts}</span> Posts
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-900 dark:text-white">{profileData.followers}</span> Followers
-                </div>
-                <div>
-                  <span className="font-semibold text-gray-900 dark:text-white">{profileData.following}</span> Following
-                </div>
+          <div className="mt-24 text-center">
+            <h2 className="text-3xl font-semibold">{profileData?.username}</h2>
+            <p className="text-gray-700 dark:text-gray-300">{profileData?.email}</p>
+            <div className="mt-4 flex justify-center space-x-6">
+              <div>
+                <span className="font-semibold">{profileData?.posts?.length || 0}</span> Posts
+              </div>
+              <div>
+                <span className="font-semibold">{profileData?.follower?.length || 0}</span> Followers
+              </div>
+              <div>
+                <span className="font-semibold">{profileData?.following?.length || 0}</span> Following
               </div>
             </div>
 
-            {/* Edit Button */}
             {isEditing ? (
-              <div className="mt-8 text-center">
-                <form onSubmit={handleProfileUpdate}>
-                  <div className="mb-4">
-                    <label htmlFor="bio" className="block text-gray-700 dark:text-gray-200">Bio</label>
-                    <textarea
-                      id="bio"
-                      value={profileData.bio}
-                      onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
-                      className="w-full mt-2 p-4 bg-gray-200 dark:bg-gray-700 rounded-md"
-                      rows={4}
-                    />
-                  </div>
-
-                  <div className="mb-4">
-                    <button type="submit" className="px-6 py-3 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition">
-                      Save Changes
-                    </button>
-                  </div>
-                </form>
-              </div>
+              <form className="mt-8" onSubmit={handleProfileUpdate}>
+                <label className="block">Bio</label>
+                <textarea
+                  value={profileData?.bio || ""}
+                  onChange={(e) => setProfileData((prev) => prev ? { ...prev, bio: e.target.value } : prev)}
+                  className="w-full mt-2 p-4 bg-gray-200 dark:bg-gray-700 rounded-md"
+                  rows={4}
+                />
+                <button type="submit" className="mt-4 px-6 py-3 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition">Save</button>
+              </form>
             ) : (
-              <div className="mt-8 text-center">
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition"
-                >
-                  Edit Profile
-                </button>
-              </div>
+              <button onClick={() => setIsEditing(true)} className="mt-8 px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition">
+                Edit profile
+              </button>
             )}
+
+            <button
+              onClick={handleFollowToggle}
+              className={`mt-8 px-6 py-3 ${isFollowing ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-semibold rounded-md transition`}
+            >
+              {isFollowing ? "Unfollow" : "Follow"}
+            </button>
           </div>
         </div>
       </div>

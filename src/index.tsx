@@ -35,7 +35,7 @@ const Documentation = lazy(() => import('./pages/Documentation'));
 
 /* Users Routes (Required Authentication) */
 const Profile = lazy(() => import('./pages/users/Profile'));
-const PaymentHistory = lazy(() => import('./pages/users/PaymentHistory'));
+const History = lazy(() => import('./pages/users/History'));
 const Settings = lazy(() => import('./pages/users/Settings'));
 
 /* Dashboard Changed by Role */
@@ -352,7 +352,7 @@ root.render(
                     keywords="profile, user, account"
                     author="LifeVerse"
                     image="/images/profile.jpg"
-                    url={`https://www.lifeversegame.com/profile/:userId`}
+                    url={`https://www.lifeversegame.com/profile/:username`}
                   >
                     <Profile />
                   </MetaTags>
@@ -360,7 +360,7 @@ root.render(
               }
             />
             <Route
-              path={`/profile/:username/payment_history`}
+              path={`/profile/:username/history`}
               element={
                 <ProtectedRoute>
                   <MetaTags
@@ -369,9 +369,9 @@ root.render(
                     keywords="payment, history, transactions"
                     author="LifeVerse"
                     image="/images/payment.jpg"
-                    url={`https://www.lifeversegame.com/profile/:userId/payment_history`}
+                    url={`https://www.lifeversegame.com/profile/:username/history`}
                   >
-                    <PaymentHistory />
+                    <History />
                   </MetaTags>
                 </ProtectedRoute>
               }
@@ -386,7 +386,7 @@ root.render(
                     keywords="settings, account, preferences"
                     author="LifeVerse"
                     image="/images/settings.jpg"
-                    url={`https://www.lifeversegame.com/profile/:userId/settings`}
+                    url={`https://www.lifeversegame.com/profile/:username/settings`}
                   >
                     <Settings />
                   </MetaTags>
@@ -412,7 +412,7 @@ root.render(
             />
 
             <Route
-              path="/control-panel"
+              path="/control_panel"
               element={
                 <MetaTags
                   title="Control Panel"
@@ -420,7 +420,7 @@ root.render(
                   keywords="about, company, mission"
                   author="LifeVerse"
                   image="/images/about.jpg"
-                  url="https://www.lifeversegame.com/control-panel"
+                  url="https://www.lifeversegame.com/control_panel"
                 >
                   <ControlPanel />
                 </MetaTags>
@@ -535,7 +535,7 @@ root.render(
             />
 
             <Route
-              path="/documentation"
+              path="/docs"
               element={
                 <MetaTags
                   title="Documentation"
@@ -543,7 +543,7 @@ root.render(
                   keywords="about, company, mission"
                   author="LifeVerse"
                   image="/images/about.jpg"
-                  url="https://www.lifeversegame.com/documentation"
+                  url="https://www.lifeversegame.com/docs"
                 >
                   <Documentation />
                 </MetaTags>

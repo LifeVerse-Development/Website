@@ -2,7 +2,7 @@ import React from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 
-const PaymentHistory: React.FC = () => {
+const History: React.FC = () => {
     return (
         <div>
             <Navbar />
@@ -11,4 +11,4 @@ const PaymentHistory: React.FC = () => {
     );
 };
 
-export default PaymentHistory;
+export default History;

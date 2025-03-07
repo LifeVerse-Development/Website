@@ -1,6 +1,4 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import ThemeToggle from "./ThemeToggle";
@@ -12,6 +10,7 @@ const Navbar: React.FC = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+    const [ hasTickets, setHasTickets ] = useState(false);
 
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -24,13 +23,21 @@ const Navbar: React.FC = () => {
         navigate("/");
     };
 
+    useEffect(() => {
+        if (user?.userId) {
+            fetch(`/api/tickets?userId=${user.userId}`)
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data && data.length > 0) {
+                        setHasTickets(true);
+                    }
+                })
+                .catch((error) => console.error("Error fetching tickets:", error));
+        }
+    }, [user]);
+
     const hasRole = user?.role || '';
-
     const hasTeamRole = ['Supporter', 'Content', 'Developer', 'Moderator', 'Admin'].includes(hasRole);
-
-    if (hasTeamRole) {
-        navigate("/dashboard");
-    }
 
     return (
         <nav className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-md z-50">
@@ -64,13 +71,11 @@ const Navbar: React.FC = () => {
 
                     <div className="hidden sm:block sm:ml-6">
                         <div className="flex space-x-4">
-                            {[
-                                { name: "Home", path: "/" },
-                                { name: "Store", path: "/store" },
-                                { name: "News", path: "/news" },
-                                { name: "About", path: "/about" },
-                                { name: "Contact", path: "/contact" },
-                            ].map((item) => (
+                            {[{ name: "Home", path: "/" },
+                            { name: "Store", path: "/store" },
+                            { name: "News", path: "/news" },
+                            { name: "About", path: "/about" },
+                            { name: "Contact", path: "/contact" }].map((item) => (
                                 <Link
                                     key={item.name}
                                     to={item.path}
@@ -103,9 +108,14 @@ const Navbar: React.FC = () => {
                                         <Link to={`/profile/${user?.username}`} className="block px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-600">
                                             Profile
                                         </Link>
-                                        <Link to={`/profile/${user?.username}/payment_history`} className="block px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-600">
-                                            Payment History
+                                        <Link to={`/profile/${user?.username}/history`} className="block px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-600">
+                                            History
                                         </Link>
+                                        {hasTickets && (
+                                            <Link to={`/profile/${user?.username}/tickets`} className="block px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-600">
+                                                Tickets
+                                            </Link>
+                                        )}
                                         <Link to={`/profile/${user?.username}/settings`} className="block px-4 py-2 text-sm hover:bg-gray-200 dark:hover:bg-gray-600">
                                             Settings
                                         </Link>
@@ -123,13 +133,11 @@ const Navbar: React.FC = () => {
 
             {isMobileMenuOpen && (
                 <div className="sm:hidden px-2 pt-2 pb-3">
-                    {[
-                        { name: "Home", path: "/" },
-                        { name: "Store", path: "/store" },
-                        { name: "News", path: "/news" },
-                        { name: "About", path: "/about" },
-                        { name: "Contact", path: "/contact" },
-                    ].map((item) => (
+                    {[{ name: "Home", path: "/" },
+                    { name: "Store", path: "/store" },
+                    { name: "News", path: "/news" },
+                    { name: "About", path: "/about" },
+                    { name: "Contact", path: "/contact" }].map((item) => (
                         <Link
                             key={item.name}
                             to={item.path}

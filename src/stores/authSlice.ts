@@ -11,12 +11,38 @@ const getStoredAuthState = () => {
 };
 
 interface User {
-    id: string;
-    role: string;
-    profilePicture: string;
-    username: string;
-    fullName: string;
+    identifier: string;
+    userId: string;
+    socketId: string;
+    accessToken: string;
+    refreshToken: string;
+    titlePicture?: string;
+    profilePicture?: string;
     email?: string;
+    username: string;
+    role: string;
+    bio?: string;
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    address?: {
+        street: string;
+        houseNumber: string;
+        city: string;
+        state: string;
+        country: string;
+        postalCode: string;
+    };
+    payments?: string[];
+    chats?: string[];
+    groups?: string[];
+    follower?: string[]; 
+    following?: string[]; 
+    posts?: string[];
+    apiKeys?: string[];
+    betaKey?: string;
+    createdAt: Date;
+    updatedAt: Date;
 }
 
 interface AuthState {
