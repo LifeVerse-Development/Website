@@ -97,21 +97,31 @@ const Profile: React.FC = () => {
 
   const handleFollowToggle = async () => {
     try {
-      if (isFollowing) {
-        await axios.post(`http://localhost:3001/api/users/${user?.userId}/unfollow`, {}, { headers: {
-          Authorization: `Bearer ${user?.accessToken}`,
-          'Access-Control-Allow-Origin': '*',
-          'X-CSRF-TOKEN': 'X-CSRF-TOKEN'
-        } });
-        setIsFollowing(false);
-      } else {
-        await axios.post(`http://localhost:3001/api/users/${user?.userId}/follow`, {}, { headers: {
-          Authorization: `Bearer ${user?.accessToken}`,
-          'Access-Control-Allow-Origin': '*',
-          'X-CSRF-TOKEN': 'X-CSRF-TOKEN'
-        } });
-        setIsFollowing(true);
+      const csrfToken = localStorage.getItem('csrf-token');
+    
+      if (!csrfToken) {
+        console.error("CSRF Token not found");
+        return;
       }
+    
+      const endpoint = isFollowing 
+        ? `http://localhost:3001/api/users/${user?.userId}/unfollow`
+        : `http://localhost:3001/api/users/${user?.userId}/follow`;
+    
+      const response = await axios.post(
+        endpoint,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${user?.accessToken}`,
+            'X-CSRF-TOKEN': csrfToken,
+          },
+        }
+      );
+
+      console.log(response.data);
+
+      setIsFollowing(!isFollowing);
     } catch (error) {
       console.error("Error following/unfollowing user:", error);
     }
