@@ -18,7 +18,7 @@ const Login: React.FC = () => {
         if (storedAuth) {
             const authState = JSON.parse(storedAuth);
             if (authState.isAuthenticated && authState.user) {
-                dispatch(login(authState.user));
+                dispatch(login(authState));
                 navigate(`/profile/${authState.user.username}`);
             }
         }
@@ -32,11 +32,14 @@ const Login: React.FC = () => {
             try {
                 const userData = JSON.parse(decodeURIComponent(userParam));
 
-                localStorage.setItem(
-                    "authState",
-                    JSON.stringify({ isAuthenticated: true, user: userData })
-                );
-                dispatch(login(userData));
+                const authState = {
+                    isAuthenticated: true,
+                    user: userData,
+                    csrfToken: "",
+                };
+
+                localStorage.setItem("authState", JSON.stringify(authState));
+                dispatch(login(authState));
 
                 navigate(`/profile/${userData.username}`);
             } catch (error) {

@@ -19,7 +19,6 @@ const BlogView = lazy(() => import('./pages/BlogView'));
 const Store = lazy(() => import('./pages/Store'));
 const ProductView = lazy(() => import('./pages/ProductView'));
 const Cart = lazy(() => import('./pages/Cart'));
-const Checkout = lazy(() => import('./pages/Checkout'));
 const SuccessPayment = lazy(() => import('./pages/SuccessPayment'));
 const FailedPayment = lazy(() => import('./pages/FailedPayment'));
 const Downloads = lazy(() => import('./pages/Downloads'));
@@ -172,21 +171,6 @@ root.render(
                   url="https://www.lifeversegame.com/cart"
                 >
                   <Cart />
-                </MetaTags>
-              }
-            />
-            <Route
-              path="/checkout"
-              element={
-                <MetaTags
-                  title="Checkout"
-                  description="Learn more about our website and our mission."
-                  keywords="about, company, mission"
-                  author="LifeVerse"
-                  image="/images/about.jpg"
-                  url="https://www.lifeversegame.com/checkout"
-                >
-                  <Checkout />
                 </MetaTags>
               }
             />
