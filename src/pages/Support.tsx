@@ -535,12 +535,11 @@ const Support: React.FC = () => {
                 </div>
             </div>
 
-            {/* Ticket Creation Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 overflow-y-auto">
                     <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                            <div className="absolute inset-0 bg-gray-500 dark:bg-gray-800 opacity-75"></div>
+                        <div className="fixed inset-0 transition-opacity pointer-events-none" aria-hidden="true">
+                            <div className="absolute inset-0 bg-gray-500 dark:bg-gray-800 opacity-75 pointer-events-none"></div>
                         </div>
 
                         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">

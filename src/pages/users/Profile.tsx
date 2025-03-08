@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { useSelector, useDispatch } from "react-redux"
+import { useParams } from "react-router-dom"
 import type { RootState } from "../../stores/store"
 import Navbar from "../../components/Navbar"
 import Footer from "../../components/Footer"
@@ -32,39 +33,72 @@ interface User {
 
 const Profile: React.FC = () => {
   const dispatch = useDispatch()
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
+  const { isAuthenticated, user, csrfToken } = useSelector((state: RootState) => state.auth)
 
+  const { username } = useParams<{ username: string }>()
   const [isEditing, setIsEditing] = useState(false)
   const [profileData, setProfileData] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [isFollowing, setIsFollowing] = useState(false)
 
   useEffect(() => {
-    if (isAuthenticated && user?.userId) {
-      axios
-        .get(`http://localhost:3001/api/users/${user.userId}`, {
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            Authorization: `Bearer ${user.accessToken}`,
-          },
-        })
-        .then((response) => {
-          const fetchedProfileData: User = {
-            ...response.data,
-            posts: response.data.posts || [],
-            follower: response.data.follower?.map((follower: { userId: string }) => follower.userId) || [],
-            following: response.data.following?.map((following: { userId: string }) => following.userId) || [],
-          }
-          setProfileData(fetchedProfileData)
-          setIsFollowing(fetchedProfileData.follower?.includes(user.userId) || false)
-          setLoading(false)
-        })
-        .catch((error) => {
-          console.error("Error fetching user data: ", error)
-          setLoading(false)
-        })
+    if (!isAuthenticated || !user?.userId) {
+      setLoading(false)
+      return
     }
-  }, [isAuthenticated, user])
+  
+    const isOwnProfile = username === user.username || username === user.userId
+  
+    if (isOwnProfile) {
+      setProfileData({
+        identifier: user.identifier,
+        socketId: user.socketId,
+        accessToken: user.accessToken,
+        refreshToken: user.refreshToken,
+        userId: user.userId,
+        titlePicture: user.titlePicture,
+        profilePicture: user.profilePicture,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        bio: user.bio,
+        posts: user.posts || [],
+        follower: user.follower || [],
+        following: user.following || [],
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+      })
+      setIsFollowing(false)
+      setLoading(false)
+      return
+    }
+  
+    axios
+      .get(`http://localhost:3001/api/users/${username}`, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          Authorization: `Bearer ${user.accessToken}`,
+          isAuthenticated: "true",
+          csrfToken: csrfToken,
+        },
+      })
+      .then((response) => {
+        const fetchedProfileData: User = {
+          ...response.data,
+          posts: response.data.posts || [],
+          follower: response.data.follower?.map((f: { userId: string }) => f.userId) || [],
+          following: response.data.following?.map((f: { userId: string }) => f.userId) || [],
+        }
+  
+        setProfileData(fetchedProfileData)
+        setIsFollowing(fetchedProfileData.follower?.includes(user.userId) ?? false)
+        setLoading(false)
+      })
+      .catch((error) => {
+        console.error("Error fetching user data: ", error)
+        setLoading(false)
+      })
+  }, [isAuthenticated, user, username, csrfToken])
 
   if (!isAuthenticated) {
     return (
@@ -98,7 +132,7 @@ const Profile: React.FC = () => {
   const handleProfileUpdate = (e: React.FormEvent) => {
     e.preventDefault()
     if (profileData) {
-      dispatch(login({ user: profileData, csrfToken: localStorage.getItem("csrf-token") || "" }))
+      dispatch(login({ user: profileData, csrfToken: localStorage.getItem("csrfToken") || "" }))
       setIsEditing(false)
     }
   }
@@ -123,7 +157,7 @@ const Profile: React.FC = () => {
 
   const handleFollowToggle = async () => {
     try {
-      const csrfToken = localStorage.getItem("csrf-token")
+      const csrfToken = localStorage.getItem("csrfToken")
 
       if (!csrfToken) {
         console.error("CSRF Token not found")
@@ -140,7 +174,7 @@ const Profile: React.FC = () => {
         {
           headers: {
             Authorization: `Bearer ${user?.accessToken}`,
-            "X-CSRF-TOKEN": csrfToken,
+            "csrfToken": csrfToken,
           },
         },
       )

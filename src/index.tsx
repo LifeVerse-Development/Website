@@ -39,7 +39,7 @@ const Settings = lazy(() => import('./pages/users/Settings'));
 
 /* Dashboard Changed by Role */
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
-const ControlPanel = lazy(() => import('./pages/dashboard/ControlPanel'))
+const ControlPanel = lazy(() => import('./pages/controlPanel/ControlPanel'))
 
 /* Guidelines & Terms */
 const Guidelines = lazy(() => import('./pages/Guidelines'));
