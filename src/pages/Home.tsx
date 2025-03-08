@@ -827,21 +827,21 @@ const Home: React.FC = () => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/login")}
               className="px-8 py-4 bg-white text-blue-600 font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
             >
               <Play className="h-5 w-5" />
-              <span><a href="/login">Jetzt Spielen</a></span>
+              <span>Jetzt Spielen</span>
             </motion.button>
 
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate("/download")}
+              onClick={() => navigate("/downloads")}
               className="px-8 py-4 bg-blue-700 bg-opacity-30 text-white font-medium rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl border border-white border-opacity-30 hover:bg-opacity-40 flex items-center justify-center gap-2"
             >
               <Download className="h-5 w-5" />
-              <span><a href="/downloads">Download</a></span>
+              <span>Download</span>
             </motion.button>
           </div>
         </div>

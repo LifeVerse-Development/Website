@@ -375,19 +375,19 @@ const Login: React.FC = () => {
                                 <div className="mt-10 pt-6 border-t border-gray-200 dark:border-gray-700">
                                     <div className="flex items-center justify-center space-x-6">
                                         <a
-                                            href="/privacy"
+                                            href="/legal/privacy_policy"
                                             className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                                         >
                                             Privacy Policy
                                         </a>
                                         <a
-                                            href="/terms"
+                                            href="/legal/terms_of_service"
                                             className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                                         >
                                             Terms of Service
                                         </a>
                                         <a
-                                            href="/help"
+                                            href="/support"
                                             className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                                         >
                                             Help Center
