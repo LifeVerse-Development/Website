@@ -18,16 +18,16 @@ const Blog = lazy(() => import('./pages/Blog'));
 const BlogView = lazy(() => import('./pages/BlogView'));
 const Store = lazy(() => import('./pages/Store'));
 const ProductView = lazy(() => import('./pages/ProductView'));
-const Cart = lazy(() => import('./pages/Cart'));
+const Checkout = lazy(() => import('./pages/Checkout'));
 const SuccessPayment = lazy(() => import('./pages/SuccessPayment'));
 const FailedPayment = lazy(() => import('./pages/FailedPayment'));
 const Downloads = lazy(() => import('./pages/Downloads'));
 const About = lazy(() => import('./pages/About'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Support = lazy(() => import('./pages/Support'));
+const SupportView = lazy(() => import('./pages/SupportView'));
 const Faq = lazy(() => import('./pages/FAQ'));
 const Status = lazy(() => import('./pages/Status'));
-const Economy = lazy(() => import('./pages/Economy'));
 const Login = lazy(() => import('./pages/Login'));
 
 const Documentation = lazy(() => import('./pages/Documentation'));
@@ -160,17 +160,17 @@ root.render(
               }
             />
             <Route
-              path="/cart"
+              path="/checkout"
               element={
                 <MetaTags
-                  title="Cart"
+                  title="Checkout"
                   description="Learn more about our website and our mission."
                   keywords="about, company, mission"
                   author="LifeVerse"
                   image="/images/about.jpg"
-                  url="https://www.lifeversegame.com/cart"
+                  url="https://www.lifeversegame.com/checkout"
                 >
-                  <Cart />
+                  <Checkout />
                 </MetaTags>
               }
             />
@@ -265,6 +265,21 @@ root.render(
               }
             />
             <Route
+              path="/support/:ticketId"
+              element={
+                <MetaTags
+                  title="Support"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/support/:ticketId"
+                >
+                  <SupportView />
+                </MetaTags>
+              }
+            />
+            <Route
               path="/faq"
               element={
                 <MetaTags
@@ -291,21 +306,6 @@ root.render(
                   url="https://www.lifeversegame.com/status"
                 >
                   <Status />
-                </MetaTags>
-              }
-            />
-            <Route
-              path="/economy"
-              element={
-                <MetaTags
-                  title="Economy"
-                  description="Learn more about our website and our mission."
-                  keywords="about, company, mission"
-                  author="LifeVerse"
-                  image="/images/about.jpg"
-                  url="https://www.lifeversegame.com/economy"
-                >
-                  <Economy />
                 </MetaTags>
               }
             />

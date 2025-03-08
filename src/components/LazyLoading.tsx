@@ -1,63 +1,78 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { startLoading, stopLoading } from '../stores/loadingSlice';
-import { RootState } from '../stores/store';
+"use client"
+
+import type React from "react"
+import { useEffect } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { startLoading, stopLoading } from "../stores/loadingSlice"
+import type { RootState } from "../stores/store"
 
 const LazyLoading: React.FC = () => {
-    const dispatch = useDispatch();
-    const isLoading = useSelector((state: RootState) => state.loading.isLoading);
+    const dispatch = useDispatch()
+    const isLoading = useSelector((state: RootState) => state.loading.isLoading)
+    const theme = useSelector((state: RootState) => state.theme.theme)
 
     useEffect(() => {
-        dispatch(startLoading());
+        dispatch(startLoading())
 
         const timer = setTimeout(() => {
-            dispatch(stopLoading());
-        }, 5000);
+            dispatch(stopLoading())
+        }, 5000)
 
-        return () => clearTimeout(timer);
-    }, [dispatch]);
+        return () => clearTimeout(timer)
+    }, [dispatch])
+
+    useEffect(() => {
+        document.documentElement.classList.toggle("dark", theme === "dark")
+    }, [theme])
 
     return (
-        <div className="flex items-center justify-center min-h-screen">
-            {isLoading ? (
-                <div className="flex flex-col items-center justify-center">
-                    <div>
-                        <svg
-                            width="48"
-                            height="49"
-                            viewBox="0 0 48 49"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="animate-spin"
-                        >
-                            <circle
-                                cx="24"
-                                cy="24.5"
-                                r="22"
-                                stroke="#E5E7EB"
-                                strokeWidth="4"
-                            />
-                            <mask
-                                id="path-2-inside-1_2527_20912"
-                                fill="white"
-                            >
-                                <path d="M46.0051 24.5C47.1068 24.5 48.0086 23.6053 47.9172 22.5073C47.5452 18.0426 45.9291 13.7565 43.2335 10.1448C40.139 5.9986 35.7874 2.9634 30.8274 1.4916C25.8674 0.019799 20.5646 0.190212 15.7094 1.97744C11.4802 3.53423 7.78776 6.24518 5.04079 9.78438C4.36525 10.6547 4.63305 11.8965 5.55649 12.4975C6.47993 13.0984 7.70826 12.8295 8.39813 11.9705C10.6656 9.14692 13.6659 6.98122 17.0877 5.72166C21.1357 4.23155 25.557 4.08947 29.6924 5.31659C33.8278 6.54371 37.456 9.07434 40.0361 12.5313C42.217 15.4533 43.5504 18.905 43.9108 22.5083C44.0205 23.6046 44.9033 24.5 46.0051 24.5Z" />
-                            </mask>
-                            <path
-                                d="M46.0051 24.5C47.1068 24.5 48.0086 23.6053 47.9172 22.5073C47.5452 18.0426 45.9291 13.7565 43.2335 10.1448C40.139 5.9986 35.7874 2.9634 30.8274 1.4916C25.8674 0.019799 20.5646 0.190212 15.7094 1.97744C11.4802 3.53423 7.78776 6.24518 5.04079 9.78438C4.36525 10.6547 4.63305 11.8965 5.55649 12.4975C6.47993 13.0984 7.70826 12.8295 8.39813 11.9705C10.6656 9.14692 13.6659 6.98122 17.0877 5.72166C21.1357 4.23155 25.557 4.08947 29.6924 5.31659C33.8278 6.54371 37.456 9.07434 40.0361 12.5313C42.217 15.4533 43.5504 18.905 43.9108 22.5083C44.0205 23.6046 44.9033 24.5 46.0051 24.5Z"
-                                stroke="#3758F9"
-                                strokeWidth="8"
-                                mask="url(#path-2-inside-1_2527_20912)"
-                            />
-                        </svg>
+        <div className={`flex items-center justify-center min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-black'}`}>
+            <div className="w-full max-w-md mx-auto">
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center p-8">
+                        <div className="relative">
+                            <div className="absolute inset-0 rounded-full blur-xl bg-gradient-to-r from-blue-400 to-purple-500 dark:from-blue-500 dark:to-purple-600 opacity-30 animate-pulse"></div>
+                            <div className="relative">
+                                <svg className="w-24 h-24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="50" cy="50" r="45" fill="none" strokeWidth="8" stroke="currentColor" className="text-gray-200 dark:text-gray-800" />
+                                    <path d="M50 5 A45 45 0 0 1 95 50" fill="none" strokeWidth="8" strokeLinecap="round" stroke="currentColor" className="text-blue-600 dark:text-blue-400 animate-spin origin-center" style={{ animationDuration: "1.5s" }} />
+                                    <path d="M5 50 A45 45 0 0 1 50 95" fill="none" strokeWidth="8" strokeLinecap="round" stroke="currentColor" className="text-purple-600 dark:text-purple-400 animate-spin origin-center" style={{ animationDuration: "2s", animationDirection: "reverse" }} />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full animate-pulse"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="mt-8 text-center">
+                            <h3 className="text-xl font-semibold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400">
+                                Loading
+                            </h3>
+                            <p className="mt-2 text-gray-600 dark:text-gray-400">Please wait while we prepare your content</p>
+                        </div>
                     </div>
-                    <div className="text-xl text-gray-700 mt-4">Loading...</div>
-                </div>
-            ) : (
-                <div className="text-xl text-gray-700">Content Loaded</div>
-            )}
+                ) : (
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform transition-all duration-500 animate-in fade-in slide-in-from-bottom-8">
+                        <div className="flex items-center justify-center mb-6">
+                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                            </div>
+                        </div>
+                        <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-2">
+                            Content Loaded Successfully
+                        </h2>
+                        <p className="text-center text-gray-600 dark:text-gray-400">Your content is now ready to view</p>
+                        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <p className="text-sm text-center text-gray-500 dark:text-gray-500">
+                                Current theme: <span className="font-medium">{theme === "dark" ? "Dark Mode" : "Light Mode"}</span>
+                            </p>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
-    );
-};
+    )
+}
 
-export default LazyLoading;
+export default LazyLoading
