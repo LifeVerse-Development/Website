@@ -77,7 +77,7 @@ const Profile: React.FC = () => {
 
   const handleProfileUpdate = (e: React.FormEvent) => {
     e.preventDefault();
-    dispatch(login(profileData!));
+    dispatch(login({ user: profileData!, csrfToken: localStorage.getItem('csrf-token') || '' }));
     setIsEditing(false);
   };
 
@@ -98,16 +98,16 @@ const Profile: React.FC = () => {
   const handleFollowToggle = async () => {
     try {
       const csrfToken = localStorage.getItem('csrf-token');
-    
+  
       if (!csrfToken) {
         console.error("CSRF Token not found");
         return;
       }
-    
+  
       const endpoint = isFollowing 
         ? `http://localhost:3001/api/users/${user?.userId}/unfollow`
         : `http://localhost:3001/api/users/${user?.userId}/follow`;
-    
+  
       const response = await axios.post(
         endpoint,
         {},
@@ -118,14 +118,14 @@ const Profile: React.FC = () => {
           },
         }
       );
-
+  
       console.log(response.data);
-
+  
       setIsFollowing(!isFollowing);
     } catch (error) {
       console.error("Error following/unfollowing user:", error);
     }
-  };
+  };  
 
   if (loading) {
     return (

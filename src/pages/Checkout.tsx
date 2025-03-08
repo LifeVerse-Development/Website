@@ -12,29 +12,59 @@ const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const [isLoading, setIsLoading] = useState(false);
-
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardName, setCardName] = useState("");
+  
+  const csrfToken = useSelector((state: RootState) => state.auth.csrfToken);
   const { currency } = useSelector((state: RootState) => state.preferences);
   const cart = useSelector((state: RootState) => state.cart.items);
 
   const totalPrice = cart.reduce((total, item) => total + item.price * item.quantity, 0);
-  
   const exchangeRates: { [key: string]: number } = {
     EUR: 1,
     USD: 1.1,
     GBP: 0.85,
   };
-
   const exchangeRate = exchangeRates[currency as keyof typeof exchangeRates] || exchangeRates.EUR;
   const totalPriceInSelectedCurrency = totalPrice * exchangeRate;
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
+    if (!csrfToken) {
+      alert("❌ CSRF-Token fehlt. Bitte lade die Seite neu.");
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch("http://localhost:3001/api/payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfToken,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          amount: totalPriceInSelectedCurrency,
+          currency,
+          cardNumber,
+          cardName,
+          items: cart,
+        }),
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        alert("✅ Zahlung erfolgreich!");
+        dispatch(clearCart());
+        navigate("/store");
+      } else {
+        alert(`❌ Zahlung fehlgeschlagen: ${result.message}`);
+      }
+    } catch (error) {
+      alert("❌ Fehler bei der Zahlungsabwicklung");
+    } finally {
       setIsLoading(false);
-      alert("✅ Bestellung erfolgreich! (Simuliert)");
-      dispatch(clearCart());
-      navigate("/store");
-    }, 2000);
+    }
   };
 
   return (
@@ -59,11 +89,15 @@ const Checkout: React.FC = () => {
         <input
           type="text"
           placeholder="Kreditkartennummer"
+          value={cardNumber}
+          onChange={(e) => setCardNumber(e.target.value)}
           className="w-full mt-2 p-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
         />
         <input
           type="text"
           placeholder="Name auf Karte"
+          value={cardName}
+          onChange={(e) => setCardName(e.target.value)}
           className="w-full mt-2 p-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white"
         />
 
