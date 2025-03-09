@@ -28,6 +28,7 @@ interface User {
     address?: {
         street: string;
         houseNumber: string;
+        apartment: string;
         city: string;
         state: string;
         country: string;

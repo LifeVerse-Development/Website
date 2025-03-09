@@ -8,7 +8,7 @@ import { logout } from "../stores/authSlice"
 import { removeItem, updateQuantity, clearCart } from "../stores/cartSlice"
 import type { RootState } from "../stores/store"
 import ThemeToggle from "./ThemeToggle"
-import { Menu, X, ChevronDown, Home, ShoppingBag, Newspaper, Mail, LogOut, Settings, User, History, TicketCheck, LayoutDashboard, ShoppingCart, Trash, Plus, Minus, Activity } from 'lucide-react'
+import { Menu, X, ChevronDown, Home, ShoppingBag, Newspaper, Mail, LogOut, Settings, User, History, TicketCheck, LayoutDashboard, ShoppingCart, Trash, Plus, Minus, Activity, TowerControl } from 'lucide-react'
 
 const Navbar: React.FC = () => {
     const dispatch = useDispatch()
@@ -299,6 +299,11 @@ const Navbar: React.FC = () => {
                                             <p className="text-sm font-medium truncate text-gray-700 dark:text-gray-300">{user?.username}</p>
                                         </div>
                                         <div className="py-1">
+                                            {hasTeamRole && (
+                                                <MenuLink to="/control_panel" icon={<TowerControl size={16} />}>
+                                                    Control Panel
+                                                </MenuLink>
+                                            )}
                                             {hasTeamRole && (
                                                 <MenuLink to="/dashboard" icon={<LayoutDashboard size={16} />}>
                                                     Dashboard
