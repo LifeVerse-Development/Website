@@ -30,8 +30,6 @@ const Faq = lazy(() => import('./pages/FAQ'));
 const Status = lazy(() => import('./pages/Status'));
 const Login = lazy(() => import('./pages/Login'));
 
-const Documentation = lazy(() => import('./pages/Documentation'));
-
 /* Users Routes (Required Authentication) */
 const Profile = lazy(() => import('./pages/users/Profile'));
 const History = lazy(() => import('./pages/users/History'));
@@ -49,6 +47,9 @@ const TermsOfService = lazy(() => import('./pages/legal/TermsOfService'));
 const TermsOfUse = lazy(() => import('./pages/legal/TermsOfUse'));
 const GeneralTermsAndConditions = lazy(() => import('./pages/legal/GeneralTermsAndConditions'));
 const CookiePolicy = lazy(() => import('./pages/legal/CookiePolicy'));
+
+const Documentation = lazy(() => import('./pages/Documentation'));
+//const Forum = lazy(() => import('./pages/Forum'));
 
 const logService = new LogService();
 
