@@ -802,16 +802,6 @@ const Home: React.FC = () => {
               </div>
             </Link>
           </div>
-
-          <div className="mt-12 text-center">
-            <p className="text-gray-600 dark:text-gray-400 mb-4">Noch Fragen? Kontaktiere unser Support-Team.</p>
-            <Link
-              to="/contact"
-              className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
-            >
-              Kontakt aufnehmen
-            </Link>
-          </div>
         </div>
       </div>
 
