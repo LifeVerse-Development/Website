@@ -1,7 +1,8 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
+//import Cookies from 'js-cookie';
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useSelector, useDispatch } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import { clearCart } from "../stores/cartSlice"
@@ -19,8 +20,8 @@ import {
     Check,
     X,
 } from "lucide-react"
+import axios from "axios"
 
-// Define types for the checkout process
 interface CheckoutFormData {
     email: string
     firstName: string
@@ -48,7 +49,6 @@ interface CheckoutFormData {
     notes?: string
 }
 
-// Define checkout steps
 type CheckoutStep = "cart" | "shipping" | "payment" | "review" | "confirmation"
 
 const Checkout: React.FC = () => {
@@ -56,7 +56,6 @@ const Checkout: React.FC = () => {
     const dispatch = useDispatch()
     const { items } = useSelector((state: RootState) => state.cart)
     const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
-    const { csrfToken } = useSelector((state: RootState) => state.auth)
 
     const [currentStep, setCurrentStep] = useState<CheckoutStep>("cart")
     const [isProcessing, setIsProcessing] = useState(false)
@@ -78,15 +77,13 @@ const Checkout: React.FC = () => {
         notes: "",
     })
 
-    // Calculate cart totals
     const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0)
     const shippingCost =
         formData.shippingMethod === "standard" ? 5.99 : formData.shippingMethod === "express" ? 12.99 : 19.99
-    const taxRate = 0.19 // 19% VAT for Germany
+    const taxRate = 0.19
     const tax = subtotal * taxRate
     const total = subtotal + shippingCost + tax
 
-    // Format price with Euro symbol
     const formatPrice = (price: number) => {
         return new Intl.NumberFormat("de-DE", {
             style: "currency",
@@ -94,82 +91,79 @@ const Checkout: React.FC = () => {
         }).format(price)
     }
 
-    // Handle form input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
 
         if (name.includes(".")) {
             const [parent, child] = name.split(".")
-            if (parent === "billingAddress" && !formData.billingAddress) {
-                // Initialize billingAddress with empty required fields if it doesn't exist
-                setFormData({
-                    ...formData,
-                    billingAddress: {
-                        firstName: "",
-                        lastName: "",
-                        address: "",
-                        city: "",
-                        state: "",
-                        postalCode: "",
-                        country: "Germany",
-                        [child]: value,
-                    },
-                })
-            } else {
-                const parentObj = formData[parent as keyof CheckoutFormData]
-                if (parentObj && typeof parentObj === "object") {
-                    setFormData({
-                        ...formData,
-                        [parent]: {
-                            ...parentObj,
+            setFormData((prevData) => {
+                if (parent === "billingAddress" && !prevData.billingAddress) {
+                    return {
+                        ...prevData,
+                        billingAddress: {
+                            firstName: "",
+                            lastName: "",
+                            address: "",
+                            city: "",
+                            state: "",
+                            postalCode: "",
+                            country: "Germany",
                             [child]: value,
                         },
-                    })
+                    }
+                } else {
+                    const parentObj = prevData[parent as keyof CheckoutFormData]
+                    if (parentObj && typeof parentObj === "object") {
+                        return {
+                            ...prevData,
+                            [parent]: {
+                                ...parentObj,
+                                [child]: value,
+                            },
+                        }
+                    }
+                    return prevData
                 }
-            }
-        } else {
-            setFormData({
-                ...formData,
-                [name]: value,
             })
+        } else {
+            setFormData((prevData) => ({
+                ...prevData,
+                [name]: value,
+            }))
         }
     }
 
-    // Handle checkbox changes
     const handleCheckboxChange = (name: string, checked: boolean) => {
         if (name === "billingAddressSame" && !checked) {
-            // Initialize billingAddress with shipping address when unchecking "same as shipping"
-            setFormData({
-                ...formData,
+            setFormData((prevData) => ({
+                ...prevData,
                 billingAddressSame: false,
                 billingAddress: {
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    address: formData.address,
-                    apartment: formData.apartment,
-                    city: formData.city,
-                    state: formData.state,
-                    postalCode: formData.postalCode,
-                    country: formData.country,
+                    firstName: prevData.firstName,
+                    lastName: prevData.lastName,
+                    address: prevData.address,
+                    apartment: prevData.apartment,
+                    city: prevData.city,
+                    state: prevData.state,
+                    postalCode: prevData.postalCode,
+                    country: prevData.country,
                 },
-            })
+            }))
         } else {
-            setFormData({
-                ...formData,
+            setFormData((prevData) => ({
+                ...prevData,
                 [name]: checked,
-            })
+            }))
         }
     }
 
-    // Handle radio/select changes
     const handleSelectChange = (name: string, value: string) => {
-        setFormData({
-            ...formData,
+        setFormData((prevData) => ({
+            ...prevData,
             [name]: value,
-        })
+        }))
     }
 
-    // Validate current step before proceeding
     const validateStep = (): boolean => {
         setError(null)
 
@@ -197,21 +191,18 @@ const Checkout: React.FC = () => {
                 return false
             }
 
-            // Validate email format
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
             if (!emailRegex.test(formData.email)) {
                 setError("Please enter a valid email address")
                 return false
             }
 
-            // Validate postal code format for Germany
             const postalCodeRegex = /^\d{5}$/
             if (!postalCodeRegex.test(formData.postalCode)) {
                 setError("Please enter a valid postal code (5 digits)")
                 return false
             }
 
-            // Validate phone number
             const phoneRegex = /^\+?[0-9\s]{10,15}$/
             if (!phoneRegex.test(formData.phone.replace(/\s/g, ""))) {
                 setError("Please enter a valid phone number")
@@ -222,7 +213,6 @@ const Checkout: React.FC = () => {
         return true
     }
 
-    // Navigate to next step
     const nextStep = () => {
         if (!validateStep()) return
 
@@ -232,7 +222,6 @@ const Checkout: React.FC = () => {
         else if (currentStep === "review") processPayment()
     }
 
-    // Navigate to previous step
     const prevStep = () => {
         if (currentStep === "shipping") setCurrentStep("cart")
         else if (currentStep === "payment") setCurrentStep("shipping")
@@ -241,15 +230,14 @@ const Checkout: React.FC = () => {
 
     const processPayment = useCallback(async () => {
         if (items.length === 0) {
-            setError("Your cart is empty")
-            return
+            setError("Your cart is empty");
+            return;
         }
 
-        setIsProcessing(true)
-        setError(null)
+        setIsProcessing(true);
+        setError(null);
 
         try {
-            // Prepare payment data
             const paymentData = {
                 items: items.map((item) => ({
                     id: item.id,
@@ -265,7 +253,7 @@ const Checkout: React.FC = () => {
                 shipping: {
                     address: {
                         line1: formData.address,
-                        line2: formData.apartment,
+                        line2: formData.apartment || "",
                         city: formData.city,
                         state: formData.state,
                         postal_code: formData.postalCode,
@@ -292,44 +280,46 @@ const Checkout: React.FC = () => {
                     tax,
                     total,
                 },
-                notes: formData.notes,
-            }
+                notes: formData.notes || "",
+            };
 
-            // Send payment data to backend
-            const response = await fetch("http://localhost:3001/api/payments", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${user?.accessToken || ""}`,
-                    "X-CSRF-Token": csrfToken || "",
-                },
-                body: JSON.stringify(paymentData),
-            })
+            console.log("Sending payment data:", paymentData);
 
-            const data = await response.json()
+            //const csrfToken = Cookies.get('X-CSRF-TOKEN') || "";
 
-            if (!response.ok) {
-                throw new Error(data.message || "Payment processing failed")
-            }
+            const response = await axios.post(
+                "http://localhost:3001/api/payments",
+                paymentData,
+                {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${user?.accessToken || ""}`,
+                    },
+                }
+            );
 
-            // If the API returns a redirect URL for Stripe, redirect the user
+            const data = response.data;
+
             if (data.redirectUrl) {
-                window.location.href = data.redirectUrl
-                return
+                console.log("Redirecting to Stripe:", data.redirectUrl);
+                window.location.href = data.redirectUrl;
+                return;
             }
 
-            // Handle successful payment if no redirect
-            dispatch(clearCart())
-            setCurrentStep("confirmation")
-            showToast("Payment Successful", "Your order has been placed successfully!", "success")
+            dispatch(clearCart());
+            setCurrentStep("confirmation");
+            showToast("Payment Successful", "Your order has been placed successfully!", "success");
         } catch (err) {
-            console.error("Payment error:", err)
-            setError(err instanceof Error ? err.message : "An unknown error occurred")
-            showToast("Payment Failed", err instanceof Error ? err.message : "An unknown error occurred", "error")
+            console.error("Payment error:", err);
+            const errorMessage = axios.isAxiosError(err)
+                ? err.response?.data?.message || err.message
+                : "An unknown error occurred";
+            setError(errorMessage);
+            showToast("Payment Failed", errorMessage, "error");
         } finally {
-            setIsProcessing(false)
+            setIsProcessing(false);
         }
-    }, [items, formData, user?.accessToken, csrfToken, dispatch, subtotal, shippingCost, tax, total])
+    }, [items, formData, dispatch, user?.accessToken, subtotal, shippingCost, tax, total]);
 
     // Redirect to login if not authenticated
     useEffect(() => {
@@ -416,6 +406,7 @@ const Checkout: React.FC = () => {
         )
     }
 
+    // Input component with ref to maintain focus
     const Input: React.FC<{
         id: string
         name: string
@@ -439,10 +430,13 @@ const Checkout: React.FC = () => {
         disabled = false,
         icon,
     }) => {
+            const inputRef = useRef<HTMLInputElement>(null)
+
             return (
                 <div className="relative rounded-md shadow-sm">
                     {icon && <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">{icon}</div>}
                     <input
+                        ref={inputRef}
                         id={id}
                         name={name}
                         type={type}
@@ -452,6 +446,7 @@ const Checkout: React.FC = () => {
                         required={required}
                         disabled={disabled}
                         className={`${icon ? "pl-10" : "px-4"} block w-full rounded-xl border-gray-300 dark:border-gray-600 shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:text-white py-3 ${disabled ? "opacity-60 cursor-not-allowed" : ""} ${className}`}
+                        style={{ borderStyle: "solid", borderWidth: "1px" }}
                     />
                 </div>
             )
@@ -504,8 +499,11 @@ const Checkout: React.FC = () => {
         rows?: number
         className?: string
     }> = ({ id, name, value, onChange, placeholder = "", rows = 4, className = "" }) => {
+        const textareaRef = useRef<HTMLTextAreaElement>(null)
+
         return (
             <textarea
+                ref={textareaRef}
                 id={id}
                 name={name}
                 value={value}

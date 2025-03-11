@@ -1,5 +1,6 @@
 "use client"
 
+//import Cookies from 'js-cookie';
 import React, { useEffect, useState } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import { useDispatch } from "react-redux"
@@ -40,6 +41,8 @@ const Login: React.FC = () => {
         if (userParam) {
             try {
                 const userData = JSON.parse(decodeURIComponent(userParam))
+
+                //const csrfToken = Cookies.get('X-CSRF-TOKEN') || "";
 
                 const authState = {
                     isAuthenticated: true,
