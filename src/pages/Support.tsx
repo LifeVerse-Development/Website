@@ -1,7 +1,9 @@
 "use client"
 
 import type React from "react"
+import type { RootState } from "../stores/store"
 import { useState } from "react"
+import { useSelector } from "react-redux"
 import { motion } from "framer-motion"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
@@ -32,13 +34,13 @@ interface Ticket {
 }
 
 const Support: React.FC = () => {
+    const { isAuthenticated } = useSelector((state: RootState) => state.auth)
     const [name, setName] = useState("")
     const [email, setEmail] = useState("")
     const [subject, setSubject] = useState("")
     const [message, setMessage] = useState("")
     const [category, setCategory] = useState("account")
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [isLoggedIn] = useState(true)
     const [userTickets] = useState<Ticket[]>([
         {
             id: "T-12345",
@@ -195,20 +197,22 @@ const Support: React.FC = () => {
                             </div>
                         </div>
                         <div className="mt-8 flex justify-center">
-                            <motion.button
-                                whileHover={{ y: -3 }}
-                                onClick={() => setIsModalOpen(true)}
-                                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium transition-all hover:shadow-lg"
-                            >
-                                <Plus className="h-5 w-5" />
-                                <span>Neues Ticket erstellen</span>
-                            </motion.button>
+                            {isAuthenticated && (
+                                <motion.button
+                                    whileHover={{ y: -3 }}
+                                    onClick={() => setIsModalOpen(true)}
+                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium transition-all hover:shadow-lg"
+                                >
+                                    <Plus className="h-5 w-5" />
+                                    <span>Neues Ticket erstellen</span>
+                                </motion.button>
+                            )}
                         </div>
                     </div>
                 </motion.div>
 
                 {/* User Tickets (if logged in) */}
-                {isLoggedIn && (
+                {isAuthenticated && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
