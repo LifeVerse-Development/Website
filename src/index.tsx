@@ -34,6 +34,8 @@ const Login = lazy(() => import('./pages/Login'));
 const Profile = lazy(() => import('./pages/users/Profile'));
 const History = lazy(() => import('./pages/users/History'));
 const Settings = lazy(() => import('./pages/users/Settings'));
+const Inventory = lazy(() => import("./pages/users/Inventory"));
+const Economy = lazy(() => import("./pages/users/Economy"));
 
 /* Dashboard Changed by Role */
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
@@ -44,12 +46,13 @@ const Guidelines = lazy(() => import('./pages/Guidelines'));
 const Imprint = lazy(() => import('./pages/legal/Imprint'));
 const PrivacyPolicy = lazy(() => import('./pages/legal/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/legal/TermsOfService'));
-const TermsOfUse = lazy(() => import('./pages/legal/TermsOfUse'));
 const GeneralTermsAndConditions = lazy(() => import('./pages/legal/GeneralTermsAndConditions'));
+const TermsOfUse = lazy(() => import('./pages/legal/TermsOfUse'));
 const CookiePolicy = lazy(() => import('./pages/legal/CookiePolicy'));
 
 const Documentation = lazy(() => import('./pages/Documentation'));
-//const Forum = lazy(() => import('./pages/Forum'));
+const Forum = lazy(() => import('./pages/Forum'));
+const ForumTopicView = lazy(() => import("./pages/ForumTopicView"));
 
 const logService = new LogService();
 
@@ -378,6 +381,40 @@ root.render(
                 </ProtectedRoute>
               }
             />
+            <Route
+              path={`/profile/:username/inventory`}
+              element={
+                <ProtectedRoute>
+                  <MetaTags
+                    title="Inventory"
+                    description="Adjust your account settings on LifeVerse."
+                    keywords="settings, account, preferences"
+                    author="LifeVerse"
+                    image="/images/settings.jpg"
+                    url={`https://www.lifeversegame.com/profile/:username/inventory`}
+                  >
+                    <Inventory />
+                  </MetaTags>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`/profile/:username/economy`}
+              element={
+                <ProtectedRoute>
+                  <MetaTags
+                    title="Economy"
+                    description="Adjust your account settings on LifeVerse."
+                    keywords="settings, account, preferences"
+                    author="LifeVerse"
+                    image="/images/settings.jpg"
+                    url={`https://www.lifeversegame.com/profile/:username/economy`}
+                  >
+                    <Economy />
+                  </MetaTags>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Dashboard Changed by Role */}
             <Route
@@ -531,6 +568,36 @@ root.render(
                   url="https://www.lifeversegame.com/docs"
                 >
                   <Documentation />
+                </MetaTags>
+              }
+            />
+            <Route
+              path="/forum"
+              element={
+                <MetaTags
+                  title="Forum"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/forum"
+                >
+                  <Forum />
+                </MetaTags>
+              }
+            />
+            <Route
+              path="/forum/topic/:topicId"
+              element={
+                <MetaTags
+                  title="Forum Topic"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/forum/topic/:topicId"
+                >
+                  <ForumTopicView />
                 </MetaTags>
               }
             />

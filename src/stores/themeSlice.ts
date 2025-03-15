@@ -7,7 +7,7 @@ const getStoredTheme = (): 'light' | 'dark' => {
             return storedTheme === 'dark' ? 'dark' : 'light';
         }
     }
-    return 'light';
+    return 'dark';
 };
 
 interface ThemeState {
