@@ -33,7 +33,7 @@ interface User {
 
 const Profile: React.FC = () => {
   const dispatch = useDispatch()
-  const { isAuthenticated, user, csrfToken } = useSelector((state: RootState) => state.auth)
+  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
 
   const { username } = useParams<{ username: string }>()
   const [isEditing, setIsEditing] = useState(false)
@@ -78,8 +78,6 @@ const Profile: React.FC = () => {
         headers: {
           "Access-Control-Allow-Origin": "*",
           Authorization: `Bearer ${user.accessToken}`,
-          isAuthenticated: "true",
-          csrfToken: csrfToken,
         },
       })
       .then((response) => {
@@ -98,7 +96,7 @@ const Profile: React.FC = () => {
         console.error("Error fetching user data: ", error)
         setLoading(false)
       })
-  }, [isAuthenticated, user, username, csrfToken])
+  }, [isAuthenticated, user, username])
 
   if (!isAuthenticated) {
     return (

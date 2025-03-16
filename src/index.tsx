@@ -53,6 +53,7 @@ const CookiePolicy = lazy(() => import('./pages/legal/CookiePolicy'));
 const Documentation = lazy(() => import('./pages/Documentation'));
 const Forum = lazy(() => import('./pages/Forum'));
 const ForumTopicView = lazy(() => import("./pages/ForumTopicView"));
+const Chat = lazy(() => import("./pages/Chat"));
 
 const logService = new LogService();
 
@@ -598,6 +599,21 @@ root.render(
                   url="https://www.lifeversegame.com/forum/topic/:topicId"
                 >
                   <ForumTopicView />
+                </MetaTags>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <MetaTags
+                  title="Chat"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/chat"
+                >
+                  <Chat />
                 </MetaTags>
               }
             />

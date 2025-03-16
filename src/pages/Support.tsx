@@ -40,7 +40,7 @@ interface Ticket {
 const API_URL = "http://localhost:3001/api/tickets"
 
 const Support: React.FC = () => {
-    const { isAuthenticated } = useSelector((state: RootState) => state.auth)
+    const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
     const [subject, setSubject] = useState("")
     const [description, setDescription] = useState("");
     const [message, setMessage] = useState("")
@@ -61,9 +61,18 @@ const Support: React.FC = () => {
 
     // Fetch tickets when component mounts
     const fetchUserTickets = useCallback(async () => {
+        if (!isAuthenticated || !user?.userId) {
+            setIsLoading(false)
+            return
+        }
         setIsLoading(true)
         try {
-            const response = await fetch(API_URL)
+            const response = await fetch(API_URL, {
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken}`,
+                },
+            })
             if (!response.ok) {
                 throw new Error(`Error: ${response.status}`)
             }
@@ -78,7 +87,7 @@ const Support: React.FC = () => {
         } finally {
             setIsLoading(false)
         }
-    }, [])
+    }, [isAuthenticated, user])
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -88,7 +97,6 @@ const Support: React.FC = () => {
 
     const openModal = (ticketId?: string) => {
         if (ticketId) {
-            // Edit mode
             setIsEditMode(true)
             setCurrentTicketId(ticketId)
 
@@ -134,6 +142,11 @@ const Support: React.FC = () => {
         e.preventDefault()
 
         try {
+            if (!isAuthenticated || !user?.userId) {
+                setIsLoading(false)
+                return
+            }
+
             // Prepare ticket data
             const ticketData = {
                 category,
@@ -141,8 +154,7 @@ const Support: React.FC = () => {
                 description,
                 message,
                 status: "open",
-                // In a real app, you would include user ID
-                // userId: user.id
+                userId: user.userId
             }
 
             let response
@@ -153,6 +165,8 @@ const Support: React.FC = () => {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                        Authorization: `Bearer ${user.accessToken}`,
                     },
                     body: JSON.stringify(ticketData),
                 })
@@ -162,6 +176,8 @@ const Support: React.FC = () => {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                        Authorization: `Bearer ${user.accessToken}`,
                     },
                     body: JSON.stringify(ticketData),
                 })
@@ -174,17 +190,14 @@ const Support: React.FC = () => {
             const result = await response.json()
             console.log(isEditMode ? "Ticket updated:" : "Ticket created:", result)
 
-            // Close modal and reset form
             closeModal()
             setSubject("")
             setDescription("")
             setMessage("")
             setCategory("account")
 
-            // Refresh tickets list
             fetchUserTickets()
 
-            // Show success notification
             showNotificationMessage(
                 "success",
                 isEditMode
@@ -194,7 +207,6 @@ const Support: React.FC = () => {
         } catch (error) {
             console.error(isEditMode ? "Error updating ticket:" : "Error creating ticket:", error)
 
-            // Show error notification
             showNotificationMessage(
                 "error",
                 isEditMode
@@ -213,26 +225,31 @@ const Support: React.FC = () => {
         if (!ticketToDelete) return
 
         try {
+            if (!isAuthenticated || !user?.userId) {
+                setIsLoading(false)
+                return
+            }
+
             const response = await fetch(`${API_URL}/${ticketToDelete}`, {
                 method: "DELETE",
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken} ${user.role || ""}`,
+                }
             })
 
             if (!response.ok) {
                 throw new Error(`Error: ${response.status}`)
             }
 
-            // Refresh tickets list
             fetchUserTickets()
 
-            // Show success notification
             showNotificationMessage("success", "Your support ticket has been successfully deleted.")
         } catch (error) {
             console.error("Error deleting ticket:", error)
 
-            // Show error notification
             showNotificationMessage("error", "There was a problem deleting your ticket. Please try again later.")
         } finally {
-            // Close the delete modal
             setIsDeleteModalOpen(false)
             setTicketToDelete(null)
         }
@@ -579,63 +596,6 @@ const Support: React.FC = () => {
                                         <ChevronRight className="h-4 w-4 ml-auto text-gray-400" />
                                     </div>
                                 </a>
-                            </div>
-                        </motion.div>
-
-                        {/* FAQ Section */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6 }}
-                            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden"
-                        >
-                            <div className="h-2 bg-gradient-to-r from-blue-500 to-purple-500"></div>
-                            <div className="p-6">
-                                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Common Questions</h2>
-
-                                <div className="space-y-4">
-                                    <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
-                                        <h3 className="text-base font-medium text-gray-900 dark:text-white mb-1">
-                                            How can I reset my password?
-                                        </h3>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            You can reset your password by clicking on "Forgot Password" on the login page. We will then send
-                                            you an email with a link to reset your password.
-                                        </p>
-                                    </div>
-
-                                    <div className="border-b border-gray-200 dark:border-gray-700 pb-3">
-                                        <h3 className="text-base font-medium text-gray-900 dark:text-white mb-1">
-                                            How can I cancel my subscription?
-                                        </h3>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            You can cancel your subscription in your account settings under "Subscriptions". The cancellation
-                                            will take effect at the end of your current billing period.
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <h3 className="text-base font-medium text-gray-900 dark:text-white mb-1">
-                                            How long does it take to process my support ticket?
-                                        </h3>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                                            We strive to process all support tickets within 24 hours. For more complex issues, processing may
-                                            take a bit longer.
-                                        </p>
-                                    </div>
-                                </div>
-                                {isAuthenticated && (
-                                    <div className="mt-6 flex justify-center">
-                                        <motion.button
-                                            whileHover={{ y: -2 }}
-                                            onClick={() => openModal()}
-                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium transition-all hover:shadow-lg text-sm"
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                            <span>Create New Ticket</span>
-                                        </motion.button>
-                                    </div>
-                                )}
                             </div>
                         </motion.div>
                     </div>

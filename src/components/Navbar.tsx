@@ -34,7 +34,12 @@ const Navbar: React.FC = () => {
 
     useEffect(() => {
         if (user?.userId) {
-            fetch(`http://localhost:3001/api/tickets?userId=${user.userId}`)
+            fetch(`http://localhost:3001/api/tickets?userId=${user.userId}`, {
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken}`,
+                },
+            })
                 .then((response) => response.json())
                 .then((data) => {
                     if (data && data.length > 0) {
