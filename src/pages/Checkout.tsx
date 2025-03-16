@@ -92,46 +92,31 @@ const Checkout: React.FC = () => {
     }
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-        const { name, value } = e.target
-
-        if (name.includes(".")) {
-            const [parent, child] = name.split(".")
-            setFormData((prevData) => {
-                if (parent === "billingAddress" && !prevData.billingAddress) {
-                    return {
-                        ...prevData,
-                        billingAddress: {
-                            firstName: "",
-                            lastName: "",
-                            address: "",
-                            city: "",
-                            state: "",
-                            postalCode: "",
-                            country: "Germany",
-                            [child]: value,
-                        },
-                    }
-                } else {
-                    const parentObj = prevData[parent as keyof CheckoutFormData]
-                    if (parentObj && typeof parentObj === "object") {
-                        return {
-                            ...prevData,
-                            [parent]: {
-                                ...parentObj,
-                                [child]: value,
-                            },
-                        }
-                    }
-                    return prevData
-                }
-            })
-        } else {
-            setFormData((prevData) => ({
-                ...prevData,
-                [name]: value,
-            }))
-        }
-    }
+        const { name, value } = e.target;
+    
+        setFormData((prevData) => {
+            if (name.includes(".")) {
+                const [parent, child] = name.split(".") as [keyof CheckoutFormData, string];
+    
+                const parentData = prevData[parent] && typeof prevData[parent] === "object"
+                    ? prevData[parent] as Record<string, any>
+                    : {}; // Fallback auf ein leeres Objekt
+    
+                return {
+                    ...prevData,
+                    [parent]: {
+                        ...parentData,
+                        [child]: value,
+                    },
+                };
+            } else {
+                return {
+                    ...prevData,
+                    [name]: value,
+                };
+            }
+        });
+    };            
 
     const handleCheckboxChange = (name: string, checked: boolean) => {
         if (name === "billingAddressSame" && !checked) {

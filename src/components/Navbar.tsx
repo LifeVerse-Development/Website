@@ -34,7 +34,7 @@ const Navbar: React.FC = () => {
 
     useEffect(() => {
         if (user?.userId) {
-            fetch(`/api/tickets?userId=${user.userId}`)
+            fetch(`http://localhost:3001/api/tickets?userId=${user.userId}`)
                 .then((response) => response.json())
                 .then((data) => {
                     if (data && data.length > 0) {
@@ -316,7 +316,7 @@ const Navbar: React.FC = () => {
                                                 History
                                             </MenuLink>
                                             {hasTickets && (
-                                                <MenuLink to={`/profile/${user?.username}/tickets`} icon={<TicketCheck size={16} />}>
+                                                <MenuLink to={`/support`} icon={<TicketCheck size={16} />}>
                                                     Tickets
                                                 </MenuLink>
                                             )}
