@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "starts:prod": "serve -s build",
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
@@ -36,6 +37,7 @@
     "js-cookie": "^3.0.5",
     "lucide-react": "^0.477.0",
     "node-polyfill-webpack-plugin": "^4.1.0",
+    "nodemon": "^3.1.9",
     "postcss": "^8.5.3",
     "react": "^19.0.0",
     "react-chartjs-2": "^5.3.0",
@@ -74,6 +76,7 @@
     "@types/react-helmet": "^6.1.11",
     "autoprefixer": "^10.4.14",
     "postcss": "^8.4.24",
+    "serve": "^14.2.4",
     "tailwindcss": "^3.3.2"
   }
 }

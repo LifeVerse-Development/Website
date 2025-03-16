@@ -624,17 +624,18 @@ const Support: React.FC = () => {
                                         </p>
                                     </div>
                                 </div>
-
-                                <div className="mt-6 flex justify-center">
-                                    <motion.button
-                                        whileHover={{ y: -2 }}
-                                        onClick={() => openModal()}
-                                        className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium transition-all hover:shadow-lg text-sm"
-                                    >
-                                        <Plus className="h-4 w-4" />
-                                        <span>Create New Ticket</span>
-                                    </motion.button>
-                                </div>
+                                {isAuthenticated && (
+                                    <div className="mt-6 flex justify-center">
+                                        <motion.button
+                                            whileHover={{ y: -2 }}
+                                            onClick={() => openModal()}
+                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-medium transition-all hover:shadow-lg text-sm"
+                                        >
+                                            <Plus className="h-4 w-4" />
+                                            <span>Create New Ticket</span>
+                                        </motion.button>
+                                    </div>
+                                )}
                             </div>
                         </motion.div>
                     </div>
@@ -753,8 +754,8 @@ const Support: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 50 }}
                     className={`fixed bottom-5 right-5 p-4 rounded-lg shadow-lg z-50 flex items-center gap-3 ${notificationType === "success"
-                            ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-l-4 border-green-500"
-                            : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-l-4 border-red-500"
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-l-4 border-green-500"
+                        : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-l-4 border-red-500"
                         }`}
                 >
                     {notificationType === "success" ? (
