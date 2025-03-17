@@ -1,9 +1,11 @@
 "use client"
 
 import type React from "react"
+import type { RootState } from "../stores/store"
 import { useState, useEffect, useRef } from "react"
-import { motion } from "framer-motion"
 import { useParams, useNavigate } from "react-router-dom"
+import { useSelector } from "react-redux"
+import { motion } from "framer-motion"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 import {
@@ -26,7 +28,6 @@ import {
     Save,
     Trash2,
 } from "lucide-react"
-import axios from "axios"
 import LazyLoading from "../components/LazyLoading"
 
 type TicketStatus = "open" | "in-progress" | "resolved" | "closed"
@@ -77,6 +78,7 @@ interface MessageResponse {
 
 const SupportView: React.FC = () => {
     const navigate = useNavigate()
+    const { isAuthenticated, user } = useSelector((state: RootState) => state.auth)
     const { ticketId } = useParams<{ ticketId: string }>()
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [replyText, setReplyText] = useState("")
@@ -172,42 +174,75 @@ const SupportView: React.FC = () => {
         }
     }
 
-    const formatDateFromISO = (isoDateString: string) => {
-        const date = new Date(isoDateString)
-        return date.toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        })
+    const formatDateFromISO = (dateString: string) => {
+        try {
+            // Try to create a valid date object
+            const date = new Date(dateString)
+
+            // Check if the date is valid
+            if (isNaN(date.getTime())) {
+                console.warn("Invalid date format:", dateString)
+                // Return the original date string instead of "Date unavailable"
+                return dateString
+            }
+
+            // Format the date
+            return date.toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            })
+        } catch (error) {
+            console.error("Error formatting date:", error)
+            // Return the original date string instead of "Date unavailable"
+            return dateString
+        }
     }
 
     // Update useEffect to add description as first message and capitalize category
     useEffect(() => {
         const fetchTicket = async () => {
             try {
+                if (!isAuthenticated || !user?.userId) {
+                    setIsLoading(false)
+                    return
+                }
+
                 setIsLoading(true)
                 if (!ticketId) return
 
-                const response = await axios.get(`${API_URL}/${ticketId}`)
+                const response = await fetch(`${API_URL}/${ticketId}`, {
+                    method: "GET",
+                    headers: {
+                        "Access-Control-Allow-Origin": "*",
+                        Authorization: `Bearer ${user.accessToken}`,
+                    },
+                })
+
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`)
+                }
+
+                const data = await response.json()
 
                 // Capitalize first letter of category
-                const category = response.data.category
+                const category = data.category
                 const capitalizedCategory = category.charAt(0).toUpperCase() + category.slice(1)
 
                 // Format dates for display
-                const formattedCreatedAt = formatDateFromISO(response.data.createdAt)
+                const formattedCreatedAt = formatDateFromISO(data.createdAt)
 
                 // Store the original formatted createdAt date
                 setOriginalCreatedAt(formattedCreatedAt)
 
                 const ticketData = {
-                    ...response.data,
+                    ...data,
                     category: capitalizedCategory,
                     createdAt: formattedCreatedAt,
-                    lastUpdated: formatDateFromISO(response.data.lastUpdated),
-                    messages: response.data.messages.map((msg: MessageResponse) => ({
+                    lastUpdated: formatDateFromISO(data.lastUpdated),
+                    messages: data.messages.map((msg: MessageResponse) => ({
                         ...msg,
                         timestamp: formatDateFromISO(msg.timestamp),
                     })),
@@ -218,13 +253,13 @@ const SupportView: React.FC = () => {
                 setHasDescription(hasExistingDescription)
 
                 // Add description as first message if it exists and hasn't been added yet
-                if (response.data.description && response.data.description.trim() !== "" && !hasExistingDescription) {
+                if (data.description && data.description.trim() !== "" && !hasExistingDescription) {
                     // Create a description message that will appear first
                     const descriptionMessage: Message = {
                         id: "description",
                         sender: "user",
                         senderName: "Description",
-                        content: response.data.description,
+                        content: data.description,
                         timestamp: ticketData.createdAt,
                     }
 
@@ -248,7 +283,7 @@ const SupportView: React.FC = () => {
         if (ticketId) {
             fetchTicket()
         }
-    }, [ticketId])
+    }, [ticketId, isAuthenticated, user])
 
     const showNotificationMessage = (type: "success" | "error", message: string) => {
         setNotificationType(type)
@@ -289,6 +324,11 @@ const SupportView: React.FC = () => {
         if (!ticket || noteText.trim() === "") return
 
         try {
+            if (!isAuthenticated || !user?.userId) {
+                setIsLoading(false)
+                return
+            }
+
             // Create new note message
             const newMessage: Message = {
                 id: `msg-${Date.now()}`, // Use timestamp for unique ID
@@ -311,11 +351,23 @@ const SupportView: React.FC = () => {
             const apiMessages = [...getMessagesForAPI(), newMessage]
 
             // Update the ticket on the server
-            await axios.put(`${API_URL}/${ticketId}`, {
-                ...ticket,
-                lastUpdated: new Date().toISOString(),
-                messages: apiMessages,
+            const response = await fetch(`${API_URL}/${ticketId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken}`,
+                },
+                body: JSON.stringify({
+                    ...ticket,
+                    lastUpdated: new Date().toISOString(),
+                    messages: apiMessages,
+                }),
             })
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`)
+            }
 
             setNoteText("")
             setIsAddingNote(false)
@@ -331,6 +383,11 @@ const SupportView: React.FC = () => {
         if (!ticket || replyText.trim() === "") return
 
         try {
+            if (!isAuthenticated || !user?.userId) {
+                setIsLoading(false)
+                return
+            }
+
             // Create new message object
             const newMessage: Message = {
                 id: `msg-${Date.now()}`, // Use timestamp for unique ID
@@ -361,19 +418,32 @@ const SupportView: React.FC = () => {
             const apiMessages = [...getMessagesForAPI(), newMessage]
 
             // Update the ticket on the server
-            const response = await axios.put(`${API_URL}/${ticketId}`, {
-                ...ticket,
-                lastUpdated: new Date().toISOString(),
-                messages: apiMessages,
+            const response = await fetch(`${API_URL}/${ticketId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken}`,
+                },
+                body: JSON.stringify({
+                    ...ticket,
+                    lastUpdated: new Date().toISOString(),
+                    messages: apiMessages,
+                }),
             })
 
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`)
+            }
+
             // Update the ticket with the response data
-            if (response.data) {
+            const data = await response.json()
+            if (data) {
                 const updatedTicket = {
-                    ...response.data,
+                    ...data,
                     // Use the stored original createdAt date to preserve formatting
                     createdAt: originalCreatedAt,
-                    lastUpdated: formatDateFromISO(response.data.lastUpdated),
+                    lastUpdated: formatDateFromISO(data.lastUpdated),
                 }
 
                 // Make sure we don't lose our local messages with the description
@@ -395,6 +465,11 @@ const SupportView: React.FC = () => {
         if (!ticket) return
 
         try {
+            if (!isAuthenticated || !user?.userId) {
+                setIsLoading(false)
+                return
+            }
+
             const updatedTicket = {
                 ...ticket,
                 status,
@@ -404,18 +479,31 @@ const SupportView: React.FC = () => {
             // Prepare messages for API (without description)
             const apiMessages = getMessagesForAPI()
 
-            const response = await axios.put(`${API_URL}/${ticketId}`, {
-                ...updatedTicket,
-                messages: apiMessages,
+            const response = await fetch(`${API_URL}/${ticketId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken}`,
+                },
+                body: JSON.stringify({
+                    ...updatedTicket,
+                    messages: apiMessages,
+                }),
             })
 
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`)
+            }
+
             // Update with the response data
-            if (response.data) {
+            const data = await response.json()
+            if (data) {
                 setTicket({
-                    ...response.data,
+                    ...data,
                     // Preserve the original createdAt date
                     createdAt: originalCreatedAt,
-                    lastUpdated: formatDateFromISO(response.data.lastUpdated),
+                    lastUpdated: formatDateFromISO(data.lastUpdated),
                 })
             } else {
                 setTicket({
@@ -437,6 +525,11 @@ const SupportView: React.FC = () => {
         if (!ticket) return
 
         try {
+            if (!isAuthenticated || !user?.userId) {
+                setIsLoading(false)
+                return
+            }
+
             const updatedTicket = {
                 ...ticket,
                 priority,
@@ -446,18 +539,31 @@ const SupportView: React.FC = () => {
             // Prepare messages for API (without description)
             const apiMessages = getMessagesForAPI()
 
-            const response = await axios.put(`${API_URL}/${ticketId}`, {
-                ...updatedTicket,
-                messages: apiMessages,
+            const response = await fetch(`${API_URL}/${ticketId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken}`,
+                },
+                body: JSON.stringify({
+                    ...updatedTicket,
+                    messages: apiMessages,
+                }),
             })
 
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`)
+            }
+
             // Update with the response data
-            if (response.data) {
+            const data = await response.json()
+            if (data) {
                 setTicket({
-                    ...response.data,
+                    ...data,
                     // Preserve the original createdAt date
                     createdAt: originalCreatedAt,
-                    lastUpdated: formatDateFromISO(response.data.lastUpdated),
+                    lastUpdated: formatDateFromISO(data.lastUpdated),
                 })
             } else {
                 setTicket({
@@ -479,6 +585,11 @@ const SupportView: React.FC = () => {
         if (editedSubject.trim() === "" || !ticket) return
 
         try {
+            if (!isAuthenticated || !user?.userId) {
+                setIsLoading(false)
+                return
+            }
+
             const updatedTicket = {
                 ...ticket,
                 subject: editedSubject,
@@ -488,18 +599,31 @@ const SupportView: React.FC = () => {
             // Prepare messages for API (without description)
             const apiMessages = getMessagesForAPI()
 
-            const response = await axios.put(`${API_URL}/${ticketId}`, {
-                ...updatedTicket,
-                messages: apiMessages,
+            const response = await fetch(`${API_URL}/${ticketId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken}`,
+                },
+                body: JSON.stringify({
+                    ...updatedTicket,
+                    messages: apiMessages,
+                }),
             })
 
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`)
+            }
+
             // Update with the response data
-            if (response.data) {
+            const data = await response.json()
+            if (data) {
                 setTicket({
-                    ...response.data,
+                    ...data,
                     // Preserve the original createdAt date
                     createdAt: originalCreatedAt,
-                    lastUpdated: formatDateFromISO(response.data.lastUpdated),
+                    lastUpdated: formatDateFromISO(data.lastUpdated),
                 })
             } else {
                 setTicket({
@@ -519,7 +643,22 @@ const SupportView: React.FC = () => {
 
     const handleDeleteTicket = async () => {
         try {
-            await axios.delete(`${API_URL}/${ticketId}`)
+            if (!isAuthenticated || !user?.userId) {
+                setIsLoading(false)
+                return
+            }
+
+            const response = await fetch(`${API_URL}/${ticketId}`, {
+                method: "DELETE",
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken}`,
+                },
+            })
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`)
+            }
 
             showNotificationMessage("success", "Ticket deleted successfully")
 
@@ -586,7 +725,7 @@ const SupportView: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden mb-8"
+                    className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl mb-8"
                 >
                     <div className="h-2 bg-gradient-to-r from-blue-500 to-purple-500"></div>
                     <div className="p-6">
@@ -633,7 +772,7 @@ const SupportView: React.FC = () => {
                                     Ticket ID: {ticket.identifier} • Created on {ticket.createdAt}
                                 </p>
                             </div>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2 relative">
                                 <div className="relative">
                                     <button
                                         onClick={() => setIsStatusDropdownOpen(!isStatusDropdownOpen)}
@@ -643,7 +782,7 @@ const SupportView: React.FC = () => {
                                         <ChevronDown className="h-4 w-4" />
                                     </button>
                                     {isStatusDropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                                             <div className="py-1">
                                                 <button
                                                     onClick={() => handleStatusChange("open")}
@@ -686,7 +825,7 @@ const SupportView: React.FC = () => {
                                         <ChevronDown className="h-4 w-4" />
                                     </button>
                                     {isPriorityDropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
                                             <div className="py-1">
                                                 <button
                                                     onClick={() => handlePriorityChange("low")}
@@ -757,19 +896,19 @@ const SupportView: React.FC = () => {
                                 <div key={message.id} className={`flex ${message.sender === "user" ? "justify-start" : "justify-end"}`}>
                                     <div
                                         className={`max-w-3xl rounded-lg p-4 w-full md:w-auto ${message.sender === "user"
-                                                ? "bg-gray-100 dark:bg-gray-700/50"
-                                                : message.senderName === "Internal Note"
-                                                    ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800"
-                                                    : "bg-blue-50 dark:bg-blue-900/20"
+                                            ? "bg-gray-100 dark:bg-gray-700/50"
+                                            : message.senderName === "Internal Note"
+                                                ? "bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800"
+                                                : "bg-blue-50 dark:bg-blue-900/20"
                                             }`}
                                     >
                                         <div className="flex justify-between items-center mb-2">
                                             <span
                                                 className={`font-medium ${message.sender === "user"
-                                                        ? "text-gray-900 dark:text-white"
-                                                        : message.senderName === "Internal Note"
-                                                            ? "text-yellow-700 dark:text-yellow-400"
-                                                            : "text-blue-700 dark:text-blue-400"
+                                                    ? "text-gray-900 dark:text-white"
+                                                    : message.senderName === "Internal Note"
+                                                        ? "text-yellow-700 dark:text-yellow-400"
+                                                        : "text-blue-700 dark:text-blue-400"
                                                     }`}
                                             >
                                                 {message.senderName}
@@ -823,8 +962,8 @@ const SupportView: React.FC = () => {
                                 <button
                                     onClick={() => setIsAddingNote(!isAddingNote)}
                                     className={`flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${isAddingNote
-                                            ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                                        ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+                                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                                         }`}
                                 >
                                     {isAddingNote ? (
@@ -959,8 +1098,8 @@ const SupportView: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 50 }}
                     className={`fixed bottom-5 right-5 p-4 rounded-lg shadow-lg z-50 flex items-center gap-3 ${notificationType === "success"
-                            ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-l-4 border-green-500"
-                            : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-l-4 border-red-500"
+                        ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-l-4 border-green-500"
+                        : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-l-4 border-red-500"
                         }`}
                 >
                     {notificationType === "success" ? (

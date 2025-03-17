@@ -68,6 +68,7 @@ const Support: React.FC = () => {
         setIsLoading(true)
         try {
             const response = await fetch(API_URL, {
+                method: "GET",
                 headers: {
                     "Access-Control-Allow-Origin": "*",
                     Authorization: `Bearer ${user.accessToken}`,
