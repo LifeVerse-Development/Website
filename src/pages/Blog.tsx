@@ -2,15 +2,32 @@
 
 import type React from "react"
 import type { RootState } from "../stores/store"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { useSelector } from "react-redux"
 import { motion } from "framer-motion"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
-import { Search, Calendar, ArrowRight, Tag, Loader2, AlertCircle } from "lucide-react"
+import { Search, Calendar, ArrowRight, Tag, Loader2, AlertCircle, Plus, X, ImageIcon } from "lucide-react"
 
 // Interface that matches your Mongoose model structure
+interface IReaction {
+  _id: string
+  user: string
+  type: "like" | "dislike"
+}
+
+interface IComment {
+  _id: string
+  identifier: string
+  user: string
+  username: string
+  profileImage?: string
+  content: string
+  createdAt: string
+  updatedAt: string
+}
+
 interface BlogPost {
   _id: string
   identifier: string
@@ -20,21 +37,8 @@ interface BlogPost {
   image?: string
   tags: string[]
   author: string
-  reactions: {
-    _id: string
-    user: string
-    type: "like" | "dislike"
-  }[]
-  comments: {
-    _id: string
-    identifier: string
-    user: string
-    username: string
-    profileImage?: string
-    content: string
-    createdAt: string
-    updatedAt: string
-  }[]
+  reactions: IReaction[]
+  comments: IComment[]
   createdAt: string
   updatedAt: string
   // Frontend display properties
@@ -56,20 +60,41 @@ const Blog: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Create blog modal state
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [newBlogTitle, setNewBlogTitle] = useState("")
+  const [newBlogDescription, setNewBlogDescription] = useState("")
+  const [newBlogContent, setNewBlogContent] = useState("")
+  const [newBlogTags, setNewBlogTags] = useState("")
+  const [newBlogImage, setNewBlogImage] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  // Newsletter state
+  const [newsletterEmail, setNewsletterEmail] = useState("")
+  const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false)
+  const [newsletterSuccess, setNewsletterSuccess] = useState(false)
+  const [newsletterError, setNewsletterError] = useState<string | null>(null)
+
+  // Check if user has admin role
+  const isAdmin =
+    user?.role?.includes("Admin") ||
+    user?.role?.includes("Moderator") ||
+    user?.role?.includes("Developer") ||
+    user?.role?.includes("Content") ||
+    user?.role?.includes("Supporter") ||
+    false
+
   // Fetch blog posts from API
   useEffect(() => {
     const fetchBlogPosts = async () => {
       try {
-        if (!isAuthenticated || !user?.userId) {
-          setIsLoading(false)
-          return
-        }
         setIsLoading(true)
         const response = await fetch(`${API_URL}/blogs`, {
           method: "GET",
           headers: {
-            "Access-Control-Allow-Origin": "*",
-            Authorization: `Bearer ${user.accessToken}`,
+            "Content-Type": "application/json",
+            ...(isAuthenticated && user?.accessToken ? { Authorization: `Bearer ${user.accessToken}` } : {}),
           },
         })
 
@@ -78,6 +103,11 @@ const Blog: React.FC = () => {
         }
 
         const data = await response.json()
+
+        // Sort posts by createdAt date in descending order (newest first)
+        data.sort((a: BlogPost, b: BlogPost) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
 
         // Process the data to match our component's needs
         const processedPosts = data.map((post: BlogPost) => {
@@ -101,9 +131,7 @@ const Blog: React.FC = () => {
         setBlogPosts(processedPosts)
 
         // Extract unique categories
-        const uniqueCategories = Array.from(
-          new Set(processedPosts.map((post: BlogPost) => post.category || "")),
-        ) as string[]
+        const uniqueCategories = Array.from(new Set(processedPosts.flatMap((post: BlogPost) => post.tags))) as string[]
         setCategories(uniqueCategories)
 
         setError(null)
@@ -141,12 +169,142 @@ const Blog: React.FC = () => {
     const matchesSearch =
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.description.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory ? post.category === selectedCategory : true
+    const matchesCategory = selectedCategory ? post.tags.includes(selectedCategory) : true
     return matchesSearch && matchesCategory
   })
 
   // Get featured post (first post or null if no posts)
   const featuredPost = filteredPosts.length > 0 ? filteredPosts[0] : null
+
+  // Handle click on blog post to navigate to blog-view
+  const handleBlogPostClick = (postId: string) => {
+    navigate(`/news/${postId}`)
+  }
+
+  // Handle click outside modal to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        setIsCreateModalOpen(false)
+      }
+    }
+
+    if (isCreateModalOpen) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [isCreateModalOpen])
+
+  // Handle create blog post
+  const handleCreateBlogPost = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!isAuthenticated || !isAdmin) {
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+
+      const response = await fetch(`${API_URL}/blogs`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.accessToken} ${user?.role}`,
+        },
+        body: JSON.stringify({
+          title: newBlogTitle,
+          description: newBlogDescription,
+          content: newBlogContent,
+          tags: newBlogTags.split(",").map((tag) => tag.trim()),
+          author: user?.username,
+          image: newBlogImage,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to create blog post")
+      }
+
+      // Reset form and close modal
+      setNewBlogTitle("")
+      setNewBlogDescription("")
+      setNewBlogContent("")
+      setNewBlogTags("")
+      setNewBlogImage("")
+      setIsCreateModalOpen(false)
+
+      // Refresh blog posts
+      const refreshResponse = await fetch(`${API_URL}/blogs`, {
+        headers: {
+          Authorization: `Bearer ${user?.accessToken}`,
+        },
+      })
+
+      if (refreshResponse.ok) {
+        const data = await refreshResponse.json()
+        const processedPosts = data.map((post: BlogPost) => {
+          const category = post.category || (post.tags && post.tags.length > 0 ? post.tags[0] : "Allgemein")
+          const date = formatDate(post.createdAt)
+          const readTime = calculateReadTime(post.content)
+
+          return {
+            ...post,
+            category,
+            date,
+            readTime,
+          }
+        })
+
+        setBlogPosts(processedPosts)
+      }
+    } catch (err) {
+      console.error("Error creating blog post:", err)
+      alert("Failed to create blog post. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Handle newsletter subscription
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!newsletterEmail.trim()) return
+
+    try {
+      setIsSubmittingNewsletter(true)
+      setNewsletterError(null)
+
+      const response = await fetch(`${API_URL}/newsletters/subscribe`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: newsletterEmail }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to subscribe to newsletter")
+      }
+
+      setNewsletterSuccess(true)
+      setNewsletterEmail("")
+
+      // Reset success message after 5 seconds
+      setTimeout(() => {
+        setNewsletterSuccess(false)
+      }, 5000)
+    } catch (err: any) {
+      console.error("Error subscribing to newsletter:", err)
+      setNewsletterError("Failed to subscribe. Please try again later.")
+    } finally {
+      setIsSubmittingNewsletter(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a]">
@@ -202,6 +360,19 @@ const Blog: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Admin Create Blog Button */}
+      {isAdmin && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Neuen Artikel erstellen</span>
+          </button>
+        </div>
+      )}
 
       {/* Loading State */}
       {isLoading && (
@@ -266,7 +437,7 @@ const Blog: React.FC = () => {
                   <span className="text-sm text-gray-500 dark:text-gray-400">{featuredPost.readTime} Lesezeit</span>
                   <motion.button
                     whileHover={{ x: 5 }}
-                    onClick={() => navigate(`/news/${featuredPost._id}`)}
+                    onClick={() => handleBlogPostClick(featuredPost._id)}
                     className="flex items-center gap-2 text-blue-600 dark:text-blue-400 font-medium hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
                   >
                     <span>Weiterlesen</span>
@@ -304,7 +475,7 @@ const Blog: React.FC = () => {
                   transition={{ duration: 0.5 }}
                   whileHover={{ y: -5 }}
                   className="bg-white dark:bg-gray-800 rounded-2xl shadow-md overflow-hidden cursor-pointer group"
-                  onClick={() => navigate(`/news/${post._id}`)}
+                  onClick={() => handleBlogPostClick(post._id)}
                 >
                   <div className="h-48 overflow-hidden">
                     <img
@@ -368,13 +539,14 @@ const Blog: React.FC = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {categories.map((category) => {
-                const count = blogPosts.filter((post) => post.category === category).length
+                const count = blogPosts.filter((post) => post.tags.includes(category)).length
                 return (
                   <motion.div
                     key={category}
                     whileHover={{ y: -5 }}
-                    className={`bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer ${selectedCategory === category ? "ring-2 ring-blue-500" : ""
-                      }`}
+                    className={`bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 cursor-pointer ${
+                      selectedCategory === category ? "ring-2 ring-blue-500" : ""
+                    }`}
                     onClick={() => setSelectedCategory(category === selectedCategory ? null : category)}
                   >
                     <div className="flex items-center justify-between mb-2">
@@ -406,28 +578,46 @@ const Blog: React.FC = () => {
                 </p>
               </div>
               <div className="mt-8 md:mt-0 md:ml-8">
-                <form className="sm:flex">
-                  <label htmlFor="email-address" className="sr-only">
-                    E-Mail-Adresse
-                  </label>
-                  <input
-                    id="email-address"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    className="w-full px-5 py-3 placeholder-gray-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-700 focus:ring-white focus:border-white sm:max-w-xs rounded-md"
-                    placeholder="Deine E-Mail-Adresse"
-                  />
-                  <div className="mt-3 rounded-md shadow sm:mt-0 sm:ml-3 sm:flex-shrink-0">
-                    <button
-                      type="submit"
-                      className="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-700 focus:ring-white"
-                    >
-                      Abonnieren
-                    </button>
+                {newsletterSuccess ? (
+                  <div className="bg-white/10 p-4 rounded-lg text-white">
+                    <p className="font-medium">Vielen Dank für deine Anmeldung!</p>
+                    <p className="text-sm mt-1">Du erhältst in Kürze eine Bestätigungsmail.</p>
                   </div>
-                </form>
+                ) : (
+                  <form onSubmit={handleNewsletterSubmit} className="sm:flex">
+                    <label htmlFor="email-address" className="sr-only">
+                      E-Mail-Adresse
+                    </label>
+                    <input
+                      id="email-address"
+                      name="email"
+                      type="email"
+                      value={newsletterEmail}
+                      onChange={(e) => setNewsletterEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                      className="w-full px-5 py-3 placeholder-gray-500 focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-700 focus:ring-white focus:border-white sm:max-w-xs rounded-md"
+                      placeholder="Deine E-Mail-Adresse"
+                    />
+                    <div className="mt-3 rounded-md shadow sm:mt-0 sm:ml-3 sm:flex-shrink-0">
+                      <button
+                        type="submit"
+                        disabled={isSubmittingNewsletter}
+                        className="w-full flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-blue-700 focus:ring-white disabled:opacity-75"
+                      >
+                        {isSubmittingNewsletter ? (
+                          <span className="flex items-center">
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Wird verarbeitet...
+                          </span>
+                        ) : (
+                          "Abonnieren"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
+                {newsletterError && <p className="mt-2 text-sm text-red-200">{newsletterError}</p>}
                 <p className="mt-3 text-sm text-blue-100">
                   Wir respektieren deine Privatsphäre. Abmeldung jederzeit möglich.
                 </p>
@@ -436,6 +626,141 @@ const Blog: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Create Blog Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div
+            ref={modalRef}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Neuen Artikel erstellen</h2>
+                <button
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateBlogPost}>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Titel
+                    </label>
+                    <input
+                      type="text"
+                      id="title"
+                      value={newBlogTitle}
+                      onChange={(e) => setNewBlogTitle(e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="description"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Beschreibung
+                    </label>
+                    <textarea
+                      id="description"
+                      value={newBlogDescription}
+                      onChange={(e) => setNewBlogDescription(e.target.value)}
+                      rows={2}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="content"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Inhalt
+                    </label>
+                    <textarea
+                      id="content"
+                      value={newBlogContent}
+                      onChange={(e) => setNewBlogContent(e.target.value)}
+                      rows={10}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="tags" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Tags (durch Komma getrennt)
+                    </label>
+                    <input
+                      type="text"
+                      id="tags"
+                      value={newBlogTags}
+                      onChange={(e) => setNewBlogTags(e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      placeholder="z.B. News, Update, Feature"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="image" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Bild URL
+                    </label>
+                    <div className="flex">
+                      <input
+                        type="text"
+                        id="image"
+                        value={newBlogImage}
+                        onChange={(e) => setNewBlogImage(e.target.value)}
+                        className="w-full px-4 py-2 rounded-l-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                        placeholder="https://example.com/image.jpg"
+                      />
+                      <div className="bg-gray-100 dark:bg-gray-600 p-2 rounded-r-lg border-y border-r border-gray-300 dark:border-gray-600">
+                        <ImageIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                      </div>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      Lasse dieses Feld leer, um ein Platzhalterbild zu verwenden.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-8 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateModalOpen(false)}
+                    className="mr-4 px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <span className="flex items-center">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Wird erstellt...
+                      </span>
+                    ) : (
+                      "Artikel erstellen"
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
