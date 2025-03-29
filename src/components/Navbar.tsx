@@ -293,7 +293,7 @@ const Navbar: React.FC = () => {
                                     <span className="max-w-[100px] truncate text-gray-700 dark:text-gray-300">{user?.username}</span>
                                     <ChevronDown
                                         size={16}
-                                        className={`transition-transform duration-200 ${isProfileMenuOpen ? "rotate-180" : ""}`}
+                                        className={`transition-transform duration-200 ${isProfileMenuOpen ? "rotate-180" : ""} dark:text-white`}
                                     />
                                 </button>
 
