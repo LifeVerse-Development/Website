@@ -8,7 +8,7 @@ import { logout } from "../stores/authSlice"
 import { removeItem, updateQuantity, clearCart } from "../stores/cartSlice"
 import type { RootState } from "../stores/store"
 import ThemeToggle from "./ThemeToggle"
-import { Menu, X, ChevronDown, Home, ShoppingBag, Newspaper, Mail, LogOut, Settings, User, History, TicketCheck, LayoutDashboard, ShoppingCart, Trash, Plus, Minus, Activity, TowerControl } from 'lucide-react'
+import { Menu, X, ChevronDown, Home, ShoppingBag, Newspaper, Mail, LogOut, Settings, User, TicketCheck, LayoutDashboard, ShoppingCart, Trash, Plus, Minus, Activity, TowerControl } from 'lucide-react'
 
 const Navbar: React.FC = () => {
     const dispatch = useDispatch()
@@ -324,9 +324,6 @@ const Navbar: React.FC = () => {
                                             </MenuLink>
                                             <MenuLink to={`/profile/${user?.username}/settings`} icon={<Settings size={16} />}>
                                                 Settings
-                                            </MenuLink>
-                                            <MenuLink to={`/profile/${user?.username}/history`} icon={<History size={16} />}>
-                                                History
                                             </MenuLink>
                                         </div>
                                         <div className="py-1 border-t border-gray-200 dark:border-gray-700">

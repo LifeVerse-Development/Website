@@ -32,8 +32,6 @@ const Login = lazy(() => import('./pages/Login'));
 
 /* Users Routes (Required Authentication) */
 const Profile = lazy(() => import('./pages/users/Profile'));
-const History = lazy(() => import('./pages/users/History'));
-const HistoryDetail = lazy(() => import("./pages/users/HistoryDetail"));
 const Settings = lazy(() => import('./pages/users/Settings'));
 const Inventory = lazy(() => import("./pages/users/Inventory"));
 const Economy = lazy(() => import("./pages/users/Economy"));
@@ -347,40 +345,6 @@ root.render(
                     url={`https://www.lifeversegame.com/profile/:username`}
                   >
                     <Profile />
-                  </MetaTags>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`/profile/:username/history`}
-              element={
-                <ProtectedRoute>
-                  <MetaTags
-                    title="Payment History"
-                    description="View your payment history on LifeVerse."
-                    keywords="payment, history, transactions"
-                    author="LifeVerse"
-                    image="/images/payment.jpg"
-                    url={`https://www.lifeversegame.com/profile/:username/history`}
-                  >
-                    <History />
-                  </MetaTags>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`/profile/:username/history/:historyId`}
-              element={
-                <ProtectedRoute>
-                  <MetaTags
-                    title="Payment History"
-                    description="View your payment history on LifeVerse."
-                    keywords="payment, history, transactions"
-                    author="LifeVerse"
-                    image="/images/payment.jpg"
-                    url={`https://www.lifeversegame.com/profile/:username/history/:historyId`}
-                  >
-                    <HistoryDetail />
                   </MetaTags>
                 </ProtectedRoute>
               }
