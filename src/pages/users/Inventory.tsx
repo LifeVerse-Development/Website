@@ -1,116 +1,43 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Navbar from "../../components/Navbar"
 import Footer from "../../components/Footer"
+import InventoryItem, { type IInventoryItem as IInventoryItemType } from "./InventoryItem"
+import axios from "axios"
+import {
+  Search,
+  Filter,
+  SortAsc,
+  SortDesc,
+  Loader,
+  AlertCircle,
+  ShoppingBag,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+} from "lucide-react"
 
 // Define types for our data structures
-interface InventoryItem {
-  id: number
-  name: string
-  type: string
-  rarity: "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary"
-  value: number
-  quantity: number
-  image: string
-  description: string
-}
-
 interface User {
   id: number
   username: string
   gold: number
+  avatar?: string
 }
 
 interface Player {
   id: number
   username: string
+  avatar?: string
 }
 
 interface NotificationState {
   show: boolean
   message: string
-  type: "success" | "error" | ""
+  type: "success" | "error" | "info" | ""
 }
-
-// Mock inventory data
-const initialInventory: InventoryItem[] = [
-  {
-    id: 1,
-    name: "Diamond Sword",
-    type: "Weapon",
-    rarity: "Epic",
-    value: 5000,
-    quantity: 1,
-    image: "/placeholder.svg?height=80&width=80",
-    description: "A powerful sword made of diamond that deals extra damage.",
-  },
-  {
-    id: 2,
-    name: "Health Potion",
-    type: "Consumable",
-    rarity: "Common",
-    value: 50,
-    quantity: 12,
-    image: "/placeholder.svg?height=80&width=80",
-    description: "Restores 100 health points when consumed.",
-  },
-  {
-    id: 3,
-    name: "Golden Armor",
-    type: "Armor",
-    rarity: "Rare",
-    value: 2000,
-    quantity: 1,
-    image: "/placeholder.svg?height=80&width=80",
-    description: "Provides excellent protection against physical attacks.",
-  },
-  {
-    id: 4,
-    name: "Magic Scroll",
-    type: "Spell",
-    rarity: "Uncommon",
-    value: 750,
-    quantity: 3,
-    image: "/placeholder.svg?height=80&width=80",
-    description: "Contains a powerful spell that can be learned or used once.",
-  },
-  {
-    id: 5,
-    name: "Ancient Coin",
-    type: "Collectible",
-    rarity: "Legendary",
-    value: 10000,
-    quantity: 1,
-    image: "/placeholder.svg?height=80&width=80",
-    description: "A rare coin from an ancient civilization. Highly valued by collectors.",
-  },
-  {
-    id: 6,
-    name: "Crafting Materials",
-    type: "Resource",
-    rarity: "Common",
-    value: 25,
-    quantity: 50,
-    image: "/placeholder.svg?height=80&width=80",
-    description: "Basic materials used for crafting various items.",
-  },
-]
-
-// Mock user data
-const mockUser: User = {
-  id: 1,
-  username: "Player1",
-  gold: 15000,
-}
-
-// Mock other players for trading
-const otherPlayers: Player[] = [
-  { id: 2, username: "Player2" },
-  { id: 3, username: "Player3" },
-  { id: 4, username: "GuildMaster" },
-  { id: 5, username: "Trader99" },
-]
 
 // Define rarity order as a Record type with specific keys
 const rarityOrder: Record<"Common" | "Uncommon" | "Rare" | "Epic" | "Legendary", number> = {
@@ -122,8 +49,8 @@ const rarityOrder: Record<"Common" | "Uncommon" | "Rare" | "Epic" | "Legendary",
 }
 
 export const Inventory = () => {
-  const [inventory, setInventory] = useState<InventoryItem[]>(initialInventory)
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
+  const [inventory, setInventory] = useState<IInventoryItemType[]>([])
+  const [selectedItem, setSelectedItem] = useState<IInventoryItemType | null>(null)
   const [sellQuantity, setSellQuantity] = useState<number>(1)
   const [tradeQuantity, setTradeQuantity] = useState<number>(1)
   const [tradePartner, setTradePartner] = useState<Player | null>(null)
@@ -133,140 +60,250 @@ export const Inventory = () => {
   const [sortBy, setSortBy] = useState<string>("name")
   const [sortOrder, setSortOrder] = useState<string>("asc")
   const [filterType, setFilterType] = useState<string>("all")
-  const [userGold, setUserGold] = useState<number>(mockUser.gold)
+  const [user, setUser] = useState<User | null>(null)
+  const [otherPlayers, setOtherPlayers] = useState<Player[]>([])
   const [notification, setNotification] = useState<NotificationState>({ show: false, message: "", type: "" })
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState<number>(1)
+  const [totalPages, setTotalPages] = useState<number>(1)
+  const [itemsPerPage, setItemsPerPage] = useState<number>(12)
 
-  // Filter and sort inventory
-  const filteredInventory = inventory
-    .filter((item) => {
-      const matchesSearch =
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.rarity.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesType = filterType === "all" || item.type === filterType
-      return matchesSearch && matchesType
-    })
-    .sort((a, b) => {
-      let comparison = 0
-      if (sortBy === "name") {
-        comparison = a.name.localeCompare(b.name)
-      } else if (sortBy === "value") {
-        comparison = a.value - b.value
-      } else if (sortBy === "rarity") {
-        comparison = rarityOrder[a.rarity] - rarityOrder[b.rarity]
-      } else if (sortBy === "quantity") {
-        comparison = a.quantity - b.quantity
+  // Fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await axios.get("/api/user/profile")
+        setUser(response.data)
+      } catch (err) {
+        console.error("Error fetching user data:", err)
+        setError("Failed to load user data. Please try again later.")
       }
-      return sortOrder === "asc" ? comparison : -comparison
-    })
+    }
+
+    fetchUserData()
+  }, [])
+
+  // Fetch inventory data
+  useEffect(() => {
+    const fetchInventory = async () => {
+      setIsLoading(true)
+      setError(null)
+  
+      try {
+        // If sorting by rarity, handle it client-side due to custom ordering
+        if (sortBy === "rarity") {
+          const response = await axios.get("/api/inventory", {
+            params: {
+              page,
+              limit: itemsPerPage,
+              type: filterType !== "all" ? filterType : undefined,
+              search: searchTerm || undefined,
+            },
+          })
+  
+          let items = response.data.items
+  
+          items = items.sort((a: any, b: any) => {
+            const rarityA = rarityOrder[a.rarity as keyof typeof rarityOrder] || 0
+            const rarityB = rarityOrder[b.rarity as keyof typeof rarityOrder] || 0
+          
+            return sortOrder === "asc" ? rarityA - rarityB : rarityB - rarityA
+          })          
+  
+          setInventory(items)
+          setTotalPages(response.data.totalPages)
+        } else {
+          // For other sort types, let the server handle sorting
+          const response = await axios.get("/api/inventory", {
+            params: {
+              page,
+              limit: itemsPerPage,
+              sort: sortBy,
+              order: sortOrder,
+              type: filterType !== "all" ? filterType : undefined,
+              search: searchTerm || undefined,
+            },
+          })
+  
+          setInventory(response.data.items)
+          setTotalPages(response.data.totalPages)
+        }
+  
+        setIsLoading(false)
+      } catch (err) {
+        console.error("Error fetching inventory:", err)
+        setError("Failed to load inventory. Please try again later.")
+        setIsLoading(false)
+      }
+    }
+  
+    fetchInventory()
+  }, [page, itemsPerPage, sortBy, sortOrder, filterType, searchTerm])  
+
+  // Fetch other players for trading
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      try {
+        const response = await axios.get("/api/players")
+        setOtherPlayers(response.data)
+      } catch (err) {
+        console.error("Error fetching players:", err)
+        // Don't set error state here as it's not critical
+      }
+    }
+
+    if (activeTab === "trade") {
+      fetchPlayers()
+    }
+  }, [activeTab])
 
   // Handle item selection
-  const handleSelectItem = (item: InventoryItem) => {
+  const handleSelectItem = (item: IInventoryItemType) => {
     setSelectedItem(item)
     setSellQuantity(1)
     setTradeQuantity(1)
   }
 
   // Handle selling items
-  const handleSellItem = () => {
+  const handleSellItem = async () => {
     if (!selectedItem) return
 
-    const itemIndex = inventory.findIndex((item) => item.id === selectedItem.id)
-    if (itemIndex === -1) return
+    try {
+      setIsLoading(true)
 
-    const item = inventory[itemIndex]
-    if (sellQuantity > item.quantity) {
-      showNotification("You don't have enough items to sell!", "error")
-      return
-    }
+      const response = await axios.post("/api/inventory/sell", {
+        itemId: selectedItem.id,
+        quantity: sellQuantity,
+      })
 
-    const saleValue = item.value * sellQuantity
-
-    // Update inventory
-    const updatedInventory = [...inventory]
-    if (sellQuantity === item.quantity) {
-      updatedInventory.splice(itemIndex, 1)
-    } else {
-      updatedInventory[itemIndex] = {
-        ...item,
-        quantity: item.quantity - sellQuantity,
+      // Update user gold from response
+      if (user) {
+        setUser({
+          ...user,
+          gold: response.data.newGoldAmount,
+        })
       }
-    }
 
-    setInventory(updatedInventory)
-    setUserGold(userGold + saleValue)
-    setSelectedItem(null)
-    showNotification(`Successfully sold ${sellQuantity} ${item.name} for ${saleValue} gold!`, "success")
+      // Refresh inventory after selling
+      const inventoryResponse = await axios.get("/api/inventory", {
+        params: {
+          page,
+          limit: itemsPerPage,
+          sort: sortBy,
+          order: sortOrder,
+          type: filterType !== "all" ? filterType : undefined,
+          search: searchTerm || undefined,
+        },
+      })
+
+      setInventory(inventoryResponse.data.items)
+      setTotalPages(inventoryResponse.data.totalPages)
+
+      setSelectedItem(null)
+      showNotification(
+        `Successfully sold ${sellQuantity} ${selectedItem.name} for ${selectedItem.value * sellQuantity} gold!`,
+        "success",
+      )
+    } catch (err) {
+      console.error("Error selling item:", err)
+      showNotification("Failed to sell item. Please try again.", "error")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   // Handle trading items
-  const handleTradeItem = () => {
+  const handleTradeItem = async () => {
     if (!selectedItem || !tradePartner) return
 
-    const itemIndex = inventory.findIndex((item) => item.id === selectedItem.id)
-    if (itemIndex === -1) return
+    try {
+      setIsLoading(true)
 
-    const item = inventory[itemIndex]
-    if (tradeQuantity > item.quantity) {
-      showNotification("You don't have enough items to trade!", "error")
-      return
+      await axios.post("/api/inventory/trade", {
+        itemId: selectedItem.id,
+        quantity: tradeQuantity,
+        partnerId: tradePartner.id,
+        message: tradeOffer,
+      })
+
+      // Refresh inventory after trading
+      const inventoryResponse = await axios.get("/api/inventory", {
+        params: {
+          page,
+          limit: itemsPerPage,
+          sort: sortBy,
+          order: sortOrder,
+          type: filterType !== "all" ? filterType : undefined,
+          search: searchTerm || undefined,
+        },
+      })
+
+      setInventory(inventoryResponse.data.items)
+      setTotalPages(inventoryResponse.data.totalPages)
+
+      setSelectedItem(null)
+      showNotification(`Trade offer sent to ${tradePartner.username}!`, "success")
+    } catch (err) {
+      console.error("Error trading item:", err)
+      showNotification("Failed to send trade offer. Please try again.", "error")
+    } finally {
+      setIsLoading(false)
     }
-
-    // In a real app, this would initiate a trade request to the other player
-    // For this mock-up, we'll just simulate a successful trade
-
-    // Update inventory
-    const updatedInventory = [...inventory]
-    if (tradeQuantity === item.quantity) {
-      updatedInventory.splice(itemIndex, 1)
-    } else {
-      updatedInventory[itemIndex] = {
-        ...item,
-        quantity: item.quantity - tradeQuantity,
-      }
-    }
-
-    setInventory(updatedInventory)
-    setSelectedItem(null)
-    showNotification(`Trade offer sent to ${tradePartner.username}!`, "success")
   }
 
   // Show notification
-  const showNotification = (message: string, type: "success" | "error") => {
+  const showNotification = (message: string, type: "success" | "error" | "info") => {
     setNotification({ show: true, message, type })
     setTimeout(() => {
       setNotification({ show: false, message: "", type: "" })
     }, 3000)
   }
 
-  // Get rarity color
-  const getRarityColor = (rarity: "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary") => {
-    switch (rarity) {
-      case "Common":
-        return "text-gray-400"
-      case "Uncommon":
-        return "text-green-500"
-      case "Rare":
-        return "text-blue-500"
-      case "Epic":
-        return "text-purple-500"
-      case "Legendary":
-        return "text-yellow-500"
-      default:
-        return "text-gray-400"
+  // Handle refresh inventory
+  const handleRefreshInventory = async () => {
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const response = await axios.get("/api/inventory", {
+        params: {
+          page,
+          limit: itemsPerPage,
+          sort: sortBy,
+          order: sortOrder,
+          type: filterType !== "all" ? filterType : undefined,
+          search: searchTerm || undefined,
+        },
+      })
+
+      setInventory(response.data.items)
+      setTotalPages(response.data.totalPages)
+      showNotification("Inventory refreshed successfully!", "info")
+    } catch (err) {
+      console.error("Error refreshing inventory:", err)
+      setError("Failed to refresh inventory. Please try again later.")
+    } finally {
+      setIsLoading(false)
     }
   }
+
+  // Get unique item types from inventory for filter dropdown
+  const itemTypes = Array.from(new Set(inventory.map((item) => item.type)))
 
   return (
     <div>
       <Navbar />
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 pt-16 transition-colors duration-200">
-
         {/* Notification */}
         {notification.show && (
           <div
             className={`fixed top-20 right-4 z-50 p-4 rounded-md shadow-lg ${
-              notification.type === "success" ? "bg-green-500" : "bg-red-500"
+              notification.type === "success"
+                ? "bg-green-500"
+                : notification.type === "error"
+                  ? "bg-red-500"
+                  : "bg-blue-500"
             } text-white`}
           >
             {notification.message}
@@ -276,12 +313,45 @@ export const Inventory = () => {
         <div className="container mx-auto px-4 py-8">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-colors duration-200">
             <div className="p-6 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-200">
-                Inventory
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300 mt-2 transition-colors duration-200">
-                Manage your items, sell them, or trade with other players.
-              </p>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-800 dark:text-white transition-colors duration-200">
+                    Inventory
+                  </h1>
+                  <p className="text-gray-600 dark:text-gray-300 mt-2 transition-colors duration-200">
+                    Manage your items, sell them, or trade with other players.
+                  </p>
+                </div>
+
+                {/* User Profile Summary */}
+                {user && (
+                  <div className="mt-4 md:mt-0 flex items-center bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 border border-yellow-200 dark:border-yellow-800">
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar || "/placeholder.svg"}
+                        alt={user.username}
+                        className="w-10 h-10 rounded-full mr-3"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.src = "/placeholder.svg?height=40&width=40"
+                        }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center mr-3">
+                        <span className="text-yellow-900 dark:text-yellow-100 font-bold">
+                          {user.username.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm text-yellow-700 dark:text-yellow-300">{user.username}</p>
+                      <p className="text-xl font-bold text-yellow-900 dark:text-yellow-100">
+                        {user.gold.toLocaleString()} gold
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Tabs */}
@@ -319,51 +389,55 @@ export const Inventory = () => {
             </div>
 
             <div className="p-6">
-              {/* User Gold Display */}
-              <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800 flex items-center transition-colors duration-200">
-                <div className="w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center mr-4">
-                  <span className="text-yellow-900 dark:text-yellow-100 font-bold">G</span>
-                </div>
-                <div>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300">Your Gold</p>
-                  <p className="text-xl font-bold text-yellow-900 dark:text-yellow-100">{userGold.toLocaleString()}</p>
-                </div>
-              </div>
-
               {/* Inventory Tab */}
               {activeTab === "inventory" && (
                 <div>
                   {/* Search and Filter */}
                   <div className="mb-6 flex flex-wrap gap-4">
-                    <div className="flex-1 min-w-[200px]">
+                    <div className="flex-1 min-w-[200px] relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-5 w-5 text-gray-400" />
+                      </div>
                       <input
                         type="text"
                         placeholder="Search items..."
-                        className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
 
-                    <div>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Filter className="h-4 w-4 text-gray-400" />
+                      </div>
                       <select
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+                        className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200 appearance-none"
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
                       >
                         <option value="all">All Types</option>
-                        <option value="Weapon">Weapons</option>
-                        <option value="Armor">Armor</option>
-                        <option value="Consumable">Consumables</option>
-                        <option value="Spell">Spells</option>
-                        <option value="Collectible">Collectibles</option>
-                        <option value="Resource">Resources</option>
+                        {itemTypes.map((type) => (
+                          <option key={type} value={type}>
+                            {type}
+                          </option>
+                        ))}
                       </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                      </div>
                     </div>
 
-                    <div>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        {sortOrder === "asc" ? (
+                          <SortAsc className="h-4 w-4 text-gray-400" />
+                        ) : (
+                          <SortDesc className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
                       <select
-                        className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
+                        className="pl-10 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200 appearance-none"
                         value={`${sortBy}-${sortOrder}`}
                         onChange={(e) => {
                           const [newSortBy, newSortOrder] = e.target.value.split("-")
@@ -380,54 +454,144 @@ export const Inventory = () => {
                         <option value="quantity-asc">Quantity (Low to High)</option>
                         <option value="quantity-desc">Quantity (High to Low)</option>
                       </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
+                      </div>
                     </div>
+
+                    <button
+                      onClick={handleRefreshInventory}
+                      className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md hover:bg-blue-200 dark:hover:bg-blue-800/30 transition-colors duration-200"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? <Loader className="h-5 w-5 animate-spin" /> : <RefreshCw className="h-5 w-5" />}
+                    </button>
                   </div>
 
+                  {/* Loading State */}
+                  {isLoading && (
+                    <div className="flex justify-center items-center py-12">
+                      <Loader className="h-8 w-8 text-blue-500 animate-spin" />
+                      <span className="ml-2 text-gray-600 dark:text-gray-300">Loading inventory...</span>
+                    </div>
+                  )}
+
+                  {/* Error State */}
+                  {error && !isLoading && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6 flex items-center">
+                      <AlertCircle className="h-5 w-5 text-red-500 mr-3 flex-shrink-0" />
+                      <p className="text-red-700 dark:text-red-300">{error}</p>
+                    </div>
+                  )}
+
+                  {/* Empty State */}
+                  {!isLoading && !error && inventory.length === 0 && (
+                    <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg">
+                      <ShoppingBag className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-1">No items found</h3>
+                      <p className="text-gray-500 dark:text-gray-400 mb-4">
+                        {searchTerm || filterType !== "all"
+                          ? "Try adjusting your search or filters"
+                          : "Your inventory is empty. Visit the store to purchase items."}
+                      </p>
+                      <button
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        onClick={() => {
+                          setSearchTerm("")
+                          setFilterType("all")
+                        }}
+                      >
+                        Clear Filters
+                      </button>
+                    </div>
+                  )}
+
                   {/* Inventory Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {filteredInventory.length > 0 ? (
-                      filteredInventory.map((item) => (
-                        <div
-                          key={item.id}
-                          className={`border rounded-lg overflow-hidden cursor-pointer transition-all duration-200 ${
-                            selectedItem && selectedItem.id === item.id
-                              ? "border-blue-500 shadow-md transform scale-[1.02]"
-                              : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm"
-                          } bg-white dark:bg-gray-800`}
-                          onClick={() => handleSelectItem(item)}
-                        >
-                          <div className="p-4 flex items-center">
-                            <img
-                              src={item.image || "/placeholder.svg"}
-                              alt={item.name}
-                              className="w-16 h-16 object-contain mr-4"
-                            />
-                            <div>
-                              <h3 className="font-medium text-gray-900 dark:text-white transition-colors duration-200">
-                                {item.name}
-                              </h3>
-                              <p className={`text-sm ${getRarityColor(item.rarity)}`}>{item.rarity}</p>
-                              <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200">
-                                {item.type}
-                              </p>
-                              <div className="flex justify-between mt-1">
-                                <span className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-200">
-                                  {item.value} gold
-                                </span>
-                                <span className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-200">
-                                  x{item.quantity}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="col-span-full p-8 text-center text-gray-500 dark:text-gray-400 transition-colors duration-200">
-                        No items found matching your search criteria.
+                  {!isLoading && !error && inventory.length > 0 && (
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {inventory.map((item) => (
+                          <InventoryItem
+                            key={item.id}
+                            item={item}
+                            isSelected={selectedItem?.id === item.id}
+                            onSelect={handleSelectItem}
+                            onSell={() => {
+                              setSelectedItem(item)
+                              setActiveTab("sell")
+                            }}
+                            onTrade={() => {
+                              setSelectedItem(item)
+                              setActiveTab("trade")
+                            }}
+                          />
+                        ))}
                       </div>
-                    )}
-                  </div>
+
+                      {/* Pagination */}
+                      {totalPages > 1 && (
+                        <div className="flex flex-col sm:flex-row justify-between items-center mt-6">
+                          <div className="mb-4 sm:mb-0 flex items-center">
+                            <span className="text-sm text-gray-600 dark:text-gray-400 mr-2">Items per page:</span>
+                            <select
+                              value={itemsPerPage}
+                              onChange={(e) => {
+                                const newItemsPerPage = Number(e.target.value)
+                                setItemsPerPage(newItemsPerPage)
+                                setPage(1) // Reset to first page when changing items per page
+                              }}
+                              className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            >
+                              <option value={8}>8</option>
+                              <option value={12}>12</option>
+                              <option value={24}>24</option>
+                              <option value={48}>48</option>
+                            </select>
+                          </div>
+
+                          <nav className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setPage(Math.max(1, page - 1))}
+                              disabled={page === 1}
+                              className={`p-2 rounded-md ${
+                                page === 1
+                                  ? "text-gray-400 cursor-not-allowed"
+                                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                              }`}
+                            >
+                              <ChevronLeft className="h-5 w-5" />
+                            </button>
+
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                              <button
+                                key={pageNum}
+                                onClick={() => setPage(pageNum)}
+                                className={`px-3 py-1 rounded-md ${
+                                  pageNum === page
+                                    ? "bg-blue-600 text-white"
+                                    : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            ))}
+
+                            <button
+                              onClick={() => setPage(Math.min(totalPages, page + 1))}
+                              disabled={page === totalPages}
+                              className={`p-2 rounded-md ${
+                                page === totalPages
+                                  ? "text-gray-400 cursor-not-allowed"
+                                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                              }`}
+                            >
+                              <ChevronRight className="h-5 w-5" />
+                            </button>
+                          </nav>
+                        </div>
+                      )}
+                    </>
+                  )}
 
                   {/* Selected Item Details */}
                   {selectedItem && (
@@ -435,18 +599,32 @@ export const Inventory = () => {
                       <div className="flex flex-col md:flex-row">
                         <div className="md:w-1/4 flex justify-center mb-4 md:mb-0">
                           <img
-                            src={selectedItem.image || "/placeholder.svg"}
+                            src={selectedItem.image || "/placeholder.svg?height=128&width=128"}
                             alt={selectedItem.name}
-                            className="w-32 h-32 object-contain"
+                            className="w-32 h-32 object-contain rounded-lg bg-white dark:bg-gray-700 p-2"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement
+                              target.src = "/placeholder.svg?height=128&width=128"
+                            }}
                           />
                         </div>
-                        <div className="md:w-3/4">
+                        <div className="md:w-3/4 md:pl-6">
                           <h2 className="text-2xl font-bold text-gray-800 dark:text-white transition-colors duration-200">
                             {selectedItem.name}
                           </h2>
                           <div className="flex flex-wrap gap-2 mt-2">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${getRarityColor(selectedItem.rarity)} bg-opacity-10 dark:bg-opacity-20`}
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                selectedItem.rarity === "Common"
+                                  ? "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                  : selectedItem.rarity === "Uncommon"
+                                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                    : selectedItem.rarity === "Rare"
+                                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                                      : selectedItem.rarity === "Epic"
+                                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
+                                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
+                              }`}
                             >
                               {selectedItem.rarity}
                             </span>
@@ -474,6 +652,19 @@ export const Inventory = () => {
                                 {selectedItem.quantity}
                               </p>
                             </div>
+
+                            {/* Additional stats if available */}
+                            {selectedItem.stats &&
+                              Object.entries(selectedItem.stats).map(([key, value]) => (
+                                <div key={key}>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-200 capitalize">
+                                    {key}
+                                  </p>
+                                  <p className="text-lg font-medium text-gray-900 dark:text-gray-100 transition-colors duration-200">
+                                    {value}
+                                  </p>
+                                </div>
+                              ))}
                           </div>
                           <div className="mt-6 flex gap-2">
                             <button
@@ -511,15 +702,31 @@ export const Inventory = () => {
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-colors duration-200">
                       <div className="p-6 flex items-center border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
                         <img
-                          src={selectedItem.image || "/placeholder.svg"}
+                          src={selectedItem.image || "/placeholder.svg?height=64&width=64"}
                           alt={selectedItem.name}
-                          className="w-16 h-16 object-contain mr-4"
+                          className="w-16 h-16 object-contain mr-4 rounded-md bg-white dark:bg-gray-700 p-1"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = "/placeholder.svg?height=64&width=64"
+                          }}
                         />
                         <div>
                           <h3 className="font-medium text-gray-900 dark:text-white transition-colors duration-200">
                             {selectedItem.name}
                           </h3>
-                          <p className={`text-sm ${getRarityColor(selectedItem.rarity)}`}>
+                          <p
+                            className={`text-sm ${
+                              selectedItem.rarity === "Common"
+                                ? "text-gray-400"
+                                : selectedItem.rarity === "Uncommon"
+                                  ? "text-green-500"
+                                  : selectedItem.rarity === "Rare"
+                                    ? "text-blue-500"
+                                    : selectedItem.rarity === "Epic"
+                                      ? "text-purple-500"
+                                      : "text-yellow-500"
+                            }`}
+                          >
                             {selectedItem.rarity} {selectedItem.type}
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-200">
@@ -594,8 +801,16 @@ export const Inventory = () => {
                           <button
                             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200"
                             onClick={handleSellItem}
+                            disabled={isLoading}
                           >
-                            Sell for {selectedItem.value * sellQuantity} gold
+                            {isLoading ? (
+                              <div className="flex items-center">
+                                <Loader className="animate-spin h-4 w-4 mr-2" />
+                                Processing...
+                              </div>
+                            ) : (
+                              `Sell for ${selectedItem.value * sellQuantity} gold`
+                            )}
                           </button>
                         </div>
                       </div>
@@ -619,15 +834,31 @@ export const Inventory = () => {
                     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden transition-colors duration-200">
                       <div className="p-6 flex items-center border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
                         <img
-                          src={selectedItem.image || "/placeholder.svg"}
+                          src={selectedItem.image || "/placeholder.svg?height=64&width=64"}
                           alt={selectedItem.name}
-                          className="w-16 h-16 object-contain mr-4"
+                          className="w-16 h-16 object-contain mr-4 rounded-md bg-white dark:bg-gray-700 p-1"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = "/placeholder.svg?height=64&width=64"
+                          }}
                         />
                         <div>
                           <h3 className="font-medium text-gray-900 dark:text-white transition-colors duration-200">
                             {selectedItem.name}
                           </h3>
-                          <p className={`text-sm ${getRarityColor(selectedItem.rarity)}`}>
+                          <p
+                            className={`text-sm ${
+                              selectedItem.rarity === "Common"
+                                ? "text-gray-400"
+                                : selectedItem.rarity === "Uncommon"
+                                  ? "text-green-500"
+                                  : selectedItem.rarity === "Rare"
+                                    ? "text-blue-500"
+                                    : selectedItem.rarity === "Epic"
+                                      ? "text-purple-500"
+                                      : "text-yellow-500"
+                            }`}
+                          >
                             {selectedItem.rarity} {selectedItem.type}
                           </p>
                           <p className="text-sm text-gray-600 dark:text-gray-300 transition-colors duration-200">
@@ -719,9 +950,16 @@ export const Inventory = () => {
                           <button
                             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors duration-200"
                             onClick={handleTradeItem}
-                            disabled={!tradePartner}
+                            disabled={!tradePartner || isLoading}
                           >
-                            Send Trade Offer
+                            {isLoading ? (
+                              <div className="flex items-center">
+                                <Loader className="animate-spin h-4 w-4 mr-2" />
+                                Processing...
+                              </div>
+                            ) : (
+                              "Send Trade Offer"
+                            )}
                           </button>
                         </div>
                       </div>

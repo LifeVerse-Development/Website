@@ -7,7 +7,7 @@ const getStoredAuthState = () => {
             return JSON.parse(storedAuth);
         }
     }
-    return { isAuthenticated: false, user: null, csrfToken: "X-CSRF-TOKEN" };
+    return { isAuthenticated: false, user: null, csrfToken: "csrfToken" };
 };
 
 interface User {
@@ -34,6 +34,7 @@ interface User {
         country: string;
         postalCode: string;
     };
+    phoneNumber?: string;
     payments?: string[];
     chats?: string[];
     groups?: string[];
@@ -42,6 +43,7 @@ interface User {
     posts?: string[];
     apiKeys?: string[];
     betaKey?: string;
+    twoFactorEnabled: boolean;
     createdAt: Date;
     updatedAt: Date;
 }

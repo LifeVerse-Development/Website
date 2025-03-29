@@ -27,6 +27,7 @@ interface User {
   follower?: string[]
   following?: string[]
   posts?: any[]
+  twoFactorEnabled: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -46,9 +47,9 @@ const Profile: React.FC = () => {
       setLoading(false)
       return
     }
-  
+
     const isOwnProfile = username === user.username || username === user.userId
-  
+
     if (isOwnProfile) {
       setProfileData({
         identifier: user.identifier,
@@ -65,6 +66,7 @@ const Profile: React.FC = () => {
         posts: user.posts || [],
         follower: user.follower || [],
         following: user.following || [],
+        twoFactorEnabled: user.twoFactorEnabled || false,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       })
@@ -72,7 +74,7 @@ const Profile: React.FC = () => {
       setLoading(false)
       return
     }
-  
+
     axios
       .get(`http://localhost:3001/api/users/${username}`, {
         headers: {
@@ -86,8 +88,9 @@ const Profile: React.FC = () => {
           posts: response.data.posts || [],
           follower: response.data.follower?.map((f: { userId: string }) => f.userId) || [],
           following: response.data.following?.map((f: { userId: string }) => f.userId) || [],
+          twoFactorEnabled: response.data.twoFactorEnabled || false,
         }
-  
+
         setProfileData(fetchedProfileData)
         setIsFollowing(fetchedProfileData.follower?.includes(user.userId) ?? false)
         setLoading(false)
@@ -172,7 +175,7 @@ const Profile: React.FC = () => {
         {
           headers: {
             Authorization: `Bearer ${user?.accessToken}`,
-            "csrfToken": csrfToken,
+            csrfToken: csrfToken,
           },
         },
       )

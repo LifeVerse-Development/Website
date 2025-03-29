@@ -1,31 +1,65 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useEffect, useState } from "react"
-import { motion } from "framer-motion"
-import { useNavigate } from "react-router-dom"
-import Navbar from "../components/Navbar"
-import Footer from "../components/Footer"
-import { CheckCircle, Download, Home } from 'lucide-react'
+import type React from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux"
+import { motion } from "framer-motion";
+import { useNavigate, useLocation } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import type { RootState } from "../stores/store"
+import { CheckCircle, Download, Home } from 'lucide-react';
+import { config } from "../assets/config";
 
 const SuccessPayment: React.FC = () => {
-  const navigate = useNavigate()
-  const [countdown, setCountdown] = useState(10)
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useSelector((state: RootState) => state.auth)
+  const [countdown, setCountdown] = useState(10);
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const queryParams = new URLSearchParams(location.search);
+  const sessionId = queryParams.get("session_id");
+
+  useEffect(() => {
+    if (sessionId) {
+      fetch(`${config.apiUrl}/api/payments/${sessionId}`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.accessToken || ""}`,
+        },
+      })
+        .then(response => response.json())
+        .then(data => {
+          setPaymentData(data);
+          setLoading(false);
+        })
+        .catch(error => {
+          console.error("Fehler beim Abrufen der Zahlungsdaten:", error);
+          setLoading(false);
+        });
+    }
+  }, [sessionId, user]);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          clearInterval(timer)
-          navigate("/")
-          return 0
+          clearInterval(timer);
+          navigate("/");
+          return 0;
         }
-        return prev - 1
-      })
-    }, 1000)
+        return prev - 1;
+      });
+    }, 1000);
 
-    return () => clearInterval(timer)
-  }, [navigate])
+    return () => clearInterval(timer);
+  }, [navigate]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a]">
@@ -60,22 +94,20 @@ const SuccessPayment: React.FC = () => {
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Bestellübersicht</h2>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600 dark:text-gray-400">Produkt:</span>
-                <span className="font-medium text-gray-900 dark:text-white">LifeVerse Premium (1 Jahr)</span>
+                <span className="font-medium text-gray-900 dark:text-white">{paymentData.productName}</span>
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600 dark:text-gray-400">Betrag:</span>
-                <span className="font-medium text-gray-900 dark:text-white">59,99 €</span>
+                <span className="font-medium text-gray-900 dark:text-white">{paymentData.amount} €</span>
               </div>
               <div className="flex justify-between mb-2">
                 <span className="text-gray-600 dark:text-gray-400">Bestellnummer:</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  LV-{Math.floor(Math.random() * 1000000)}
-                </span>
+                <span className="font-medium text-gray-900 dark:text-white">{paymentData.orderId}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600 dark:text-gray-400">Datum:</span>
                 <span className="font-medium text-gray-900 dark:text-white">
-                  {new Date().toLocaleDateString("de-DE")}
+                  {new Date(paymentData.date).toLocaleDateString("de-DE")}
                 </span>
               </div>
             </div>
@@ -118,7 +150,7 @@ const SuccessPayment: React.FC = () => {
 
       <Footer />
     </div>
-  )
-}
+  );
+};
 
-export default SuccessPayment
+export default SuccessPayment;

@@ -33,6 +33,7 @@ const Login = lazy(() => import('./pages/Login'));
 /* Users Routes (Required Authentication) */
 const Profile = lazy(() => import('./pages/users/Profile'));
 const History = lazy(() => import('./pages/users/History'));
+const HistoryDetail = lazy(() => import("./pages/users/HistoryDetail"));
 const Settings = lazy(() => import('./pages/users/Settings'));
 const Inventory = lazy(() => import("./pages/users/Inventory"));
 const Economy = lazy(() => import("./pages/users/Economy"));
@@ -167,16 +168,18 @@ root.render(
             <Route
               path="/checkout"
               element={
-                <MetaTags
-                  title="Checkout"
-                  description="Learn more about our website and our mission."
-                  keywords="about, company, mission"
-                  author="LifeVerse"
-                  image="/images/about.jpg"
-                  url="https://www.lifeversegame.com/checkout"
-                >
-                  <Checkout />
-                </MetaTags>
+                <ProtectedRoute>
+                  <MetaTags
+                    title="Checkout"
+                    description="Learn more about our website and our mission."
+                    keywords="about, company, mission"
+                    author="LifeVerse"
+                    image="/images/about.jpg"
+                    url="https://www.lifeversegame.com/checkout"
+                  >
+                    <Checkout />
+                  </MetaTags>
+                </ProtectedRoute>
               }
             />
             <Route
@@ -361,6 +364,23 @@ root.render(
                     url={`https://www.lifeversegame.com/profile/:username/history`}
                   >
                     <History />
+                  </MetaTags>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`/profile/:username/history/:historyId`}
+              element={
+                <ProtectedRoute>
+                  <MetaTags
+                    title="Payment History"
+                    description="View your payment history on LifeVerse."
+                    keywords="payment, history, transactions"
+                    author="LifeVerse"
+                    image="/images/payment.jpg"
+                    url={`https://www.lifeversegame.com/profile/:username/history/:historyId`}
+                  >
+                    <HistoryDetail />
                   </MetaTags>
                 </ProtectedRoute>
               }
