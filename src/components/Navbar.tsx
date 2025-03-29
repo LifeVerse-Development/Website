@@ -214,21 +214,21 @@ const Navbar: React.FC = () => {
                                                                 <div className="flex items-center mt-1">
                                                                     <button
                                                                         onClick={() => dispatch(updateQuantity({ id: item.id, amount: -1 }))}
-                                                                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                                        className="p-1 rounded-full hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
                                                                     >
                                                                         <Minus size={14} />
                                                                     </button>
-                                                                    <span className="mx-2 text-sm">{item.quantity}</span>
+                                                                    <span className="mx-2 text-sm dark:text-white">{item.quantity}</span>
                                                                     <button
                                                                         onClick={() => dispatch(updateQuantity({ id: item.id, amount: 1 }))}
-                                                                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                                        className="p-1 rounded-full hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
                                                                     >
                                                                         <Plus size={14} />
                                                                     </button>
                                                                 </div>
                                                             </div>
                                                             <div className="text-right">
-                                                                <p className="text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                                                                <p className="text-sm font-medium dark:text-white">${(item.price * item.quantity).toFixed(2)}</p>
                                                                 <button
                                                                     onClick={() => dispatch(removeItem({ id: item.id }))}
                                                                     className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 mt-1"
@@ -246,7 +246,7 @@ const Navbar: React.FC = () => {
                                             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
                                                 <div className="flex justify-between mb-2">
                                                     <span className="text-sm text-gray-600 dark:text-gray-400">Subtotal:</span>
-                                                    <span className="text-sm font-medium">
+                                                    <span className="text-sm font-medium dark:text-white">
                                                         ${cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2)}
                                                     </span>
                                                 </div>
@@ -314,19 +314,19 @@ const Navbar: React.FC = () => {
                                                     Dashboard
                                                 </MenuLink>
                                             )}
-                                            <MenuLink to={`/profile/${user?.username}`} icon={<User size={16} />}>
-                                                Profile
-                                            </MenuLink>
-                                            <MenuLink to={`/profile/${user?.username}/history`} icon={<History size={16} />}>
-                                                History
-                                            </MenuLink>
                                             {hasTickets && (
                                                 <MenuLink to={`/support`} icon={<TicketCheck size={16} />}>
                                                     Tickets
                                                 </MenuLink>
                                             )}
+                                            <MenuLink to={`/profile/${user?.username}`} icon={<User size={16} />}>
+                                                Profile
+                                            </MenuLink>
                                             <MenuLink to={`/profile/${user?.username}/settings`} icon={<Settings size={16} />}>
                                                 Settings
+                                            </MenuLink>
+                                            <MenuLink to={`/profile/${user?.username}/history`} icon={<History size={16} />}>
+                                                History
                                             </MenuLink>
                                         </div>
                                         <div className="py-1 border-t border-gray-200 dark:border-gray-700">

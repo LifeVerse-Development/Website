@@ -555,12 +555,12 @@ const BlogView: React.FC = () => {
                   <img
                     src={post.image || "/placeholder.svg?height=600&width=1200"}
                     alt={post.title}
-                    className="w-full h-auto object-cover"
+                    className="w-full h-auto object-cover dark:text-white"
                   />
                 </div>
 
                 <div
-                  className="prose prose-lg max-w-none dark:prose-invert prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300"
+                  className="prose prose-lg max-w-none dark:text-white dark:prose-invert prose-headings:text-gray-900 dark:prose-headings:text-white prose-p:text-gray-700 dark:prose-p:text-gray-300"
                   dangerouslySetInnerHTML={{ __html: post.content }}
                 />
 
