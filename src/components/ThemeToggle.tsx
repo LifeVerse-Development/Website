@@ -6,6 +6,7 @@ import { RootState } from "../stores/store";
 const ThemeToggle: React.FC = () => {
     const dispatch = useDispatch();
     const theme = useSelector((state: RootState) => state.theme.theme);
+    const { user, csrfToken } = useSelector((state: RootState) => state.auth);
 
     useEffect(() => {
         const storedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
@@ -20,8 +21,27 @@ const ThemeToggle: React.FC = () => {
         } else {
             document.documentElement.classList.remove("dark");
         }
+
         localStorage.setItem("theme", theme);
-    }, [theme]);
+
+        if (user?.userId && user?.accessToken) {
+            fetch(`http://localhost:3001/api/users/${user.userId}/settings/preferences`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user.accessToken}`,
+                    csrfToken: csrfToken || '',
+                },
+                body: JSON.stringify({ theme }),
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to update theme");
+            })
+            .catch(error => {
+                console.error("Error updating theme:", error);
+            });
+        }
+    }, [theme, user, csrfToken]);
 
     const handleThemeToggle = () => {
         dispatch(toggleTheme());
