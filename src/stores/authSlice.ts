@@ -10,10 +10,53 @@ const getStoredAuthState = () => {
     return { isAuthenticated: false, user: null, csrfToken: "csrfToken" };
 };
 
+interface Post {
+    identifier: string;
+    image?: string;
+    title?: string;
+    description?: string;
+    content: string;
+    tags: string[];
+    badges: string[];
+    author: string;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+interface Address {
+    street?: string;
+    houseNumber?: string;
+    apartment?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    postalCode?: string;
+}
+
+interface Verification {
+    verified: boolean;
+    code: string;
+}
+
+interface AuthenticatorSetup {
+    isEnabled: boolean;
+    qrCode: string;
+    secret: string;
+    verificationCode: string;
+    recoveryCodesGenerated: boolean;
+    recoveryCodes: string[];
+}
+
+interface PrivacySettings {
+    visibility: "public" | "followers" | "private";
+    showOnlineState: boolean;
+    showActivity: boolean;
+}
+
 interface User {
     identifier: string;
     userId: string;
-    socketId: string;
+    socketId?: string;
     accessToken: string;
     refreshToken: string;
     titlePicture?: string;
@@ -21,29 +64,34 @@ interface User {
     email?: string;
     username: string;
     role: string;
-    bio?: string;
     firstName?: string;
     middleName?: string;
     lastName?: string;
-    address?: {
-        street: string;
-        houseNumber: string;
-        apartment: string;
-        city: string;
-        state: string;
-        country: string;
-        postalCode: string;
-    };
+    password?: string;
+    bio?: string;
+    address?: Address;
     phoneNumber?: string;
     payments?: string[];
     chats?: string[];
     groups?: string[];
     follower?: string[];
     following?: string[];
-    posts?: string[];
+    posts?: Post[];
     apiKeys?: string[];
+    stripeCustomerId?: string;
     betaKey?: string;
-    twoFactorEnabled: boolean;
+    twoFactorEnabled?: boolean;
+    privacySettings?: PrivacySettings;
+    emailNotification?: boolean;
+    pushNotification?: boolean;
+    language?: string;
+    theme?: "light" | "dark";
+    verification?: {
+        email: Verification;
+        discord: Verification;
+        sms: Verification;
+    };
+    authenticatorSetup?: AuthenticatorSetup;
     createdAt: Date;
     updatedAt: Date;
 }

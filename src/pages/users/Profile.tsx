@@ -27,9 +27,9 @@ interface User {
   follower?: string[]
   following?: string[]
   posts?: any[]
-  twoFactorEnabled: boolean
   createdAt: Date
   updatedAt: Date
+  twoFactorEnabled: boolean
 }
 
 const Profile: React.FC = () => {
@@ -53,7 +53,7 @@ const Profile: React.FC = () => {
     if (isOwnProfile) {
       setProfileData({
         identifier: user.identifier,
-        socketId: user.socketId,
+        socketId: user.socketId as string,
         accessToken: user.accessToken,
         refreshToken: user.refreshToken,
         userId: user.userId,
@@ -66,9 +66,9 @@ const Profile: React.FC = () => {
         posts: user.posts || [],
         follower: user.follower || [],
         following: user.following || [],
-        twoFactorEnabled: user.twoFactorEnabled || false,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
+        twoFactorEnabled: user.twoFactorEnabled || false,
       })
       setIsFollowing(false)
       setLoading(false)
@@ -166,12 +166,15 @@ const Profile: React.FC = () => {
       }
 
       const endpoint = isFollowing
-        ? `http://localhost:3001/api/users/${user?.userId}/unfollow`
-        : `http://localhost:3001/api/users/${user?.userId}/follow`
+        ? `http://localhost:3001/api/users/${profileData?.userId}/unfollow`
+        : `http://localhost:3001/api/users/${profileData?.userId}/follow`
 
       const response = await axios.post(
         endpoint,
-        {},
+        {
+          unfollowUserId: user?.userId,
+          followUserId: user?.userId,
+        },
         {
           headers: {
             Authorization: `Bearer ${user?.accessToken}`,

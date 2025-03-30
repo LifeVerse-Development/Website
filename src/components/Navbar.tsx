@@ -8,7 +8,7 @@ import { logout } from "../stores/authSlice"
 import { removeItem, updateQuantity, clearCart } from "../stores/cartSlice"
 import type { RootState } from "../stores/store"
 import ThemeToggle from "./ThemeToggle"
-import { Menu, X, ChevronDown, Home, ShoppingBag, Newspaper, Mail, LogOut, Settings, User, TicketCheck, LayoutDashboard, ShoppingCart, Trash, Plus, Minus, Activity, TowerControl } from 'lucide-react'
+import { Menu, X, ChevronDown, Home, ShoppingBag, Newspaper, LogOut, Settings, User, TicketCheck, LayoutDashboard, ShoppingCart, Trash, Plus, Minus, Activity, TowerControl, Ticket } from 'lucide-react'
 
 const Navbar: React.FC = () => {
     const dispatch = useDispatch()
@@ -92,7 +92,7 @@ const Navbar: React.FC = () => {
         { name: "News", path: "/news", icon: <Newspaper size={18} /> },
         { name: "Store", path: "/store", icon: <ShoppingBag size={18} /> },
         { name: "Status", path: "/status", icon: <Activity size={18} /> },
-        { name: "Contact", path: "/contact", icon: <Mail size={18} /> },
+        { name: "Support", path: "/support", icon: <Ticket size={18} /> },
     ]
 
     const isActive = (path: string) => location.pathname === path

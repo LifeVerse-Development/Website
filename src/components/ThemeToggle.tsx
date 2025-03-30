@@ -1,30 +1,26 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toggleTheme, setTheme } from '../stores/themeSlice';
-import { RootState } from '../stores/store';
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toggleTheme, setTheme } from "../stores/themeSlice";
+import { RootState } from "../stores/store";
 
 const ThemeToggle: React.FC = () => {
     const dispatch = useDispatch();
     const theme = useSelector((state: RootState) => state.theme.theme);
 
     useEffect(() => {
-        const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-
+        const storedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
         if (storedTheme && storedTheme !== theme) {
             dispatch(setTheme(storedTheme));
         }
     }, [dispatch, theme]);
 
     useEffect(() => {
-        if (theme) {
-            localStorage.setItem('theme', theme);
-
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
+        if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
         }
+        localStorage.setItem("theme", theme);
     }, [theme]);
 
     const handleThemeToggle = () => {
@@ -36,7 +32,7 @@ const ThemeToggle: React.FC = () => {
             onClick={handleThemeToggle}
             className="p-2 rounded-md focus:outline-none bg-primary text-lightText dark:bg-secondary dark:text-darkText"
         >
-            {theme === 'light' ? (
+            {theme === "dark" ? (
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"

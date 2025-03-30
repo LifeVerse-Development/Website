@@ -8,9 +8,11 @@ import type { RootState } from "../../stores/store"
 import Navbar from "../../components/Navbar"
 import Footer from "../../components/Footer"
 import LazyLoading from "../../components/LazyLoading"
-import { Save, Lock, User, Bell, Shield, Globe, Trash2, AlertTriangle, CheckCircle, X, LogOut } from "lucide-react"
+import { Lock, User, Bell, Shield, Globe, AlertTriangle, Save, CheckCircle, Trash2, LogOut, X, ShieldCheck, EyeOff } from "lucide-react"
 import { login } from "../../stores/authSlice"
+import { setTheme } from "../../stores/themeSlice"
 
+// Update the SettingsState interface to match the User interface from authSlice.ts
 interface SettingsState {
   email: string
   username: string
@@ -18,29 +20,10 @@ interface SettingsState {
   newPassword: string
   confirmPassword: string
   language: string
-  theme: string
+  theme: "light" | "dark" | "system"
   emailNotifications: boolean
   pushNotifications: boolean
   twoFactorAuth: boolean
-  privacySettings: {
-    profileVisibility: "public" | "followers" | "private"
-    showOnlineStatus: boolean
-    showActivity: boolean
-  }
-  // Add verification fields
-  discordVerification: {
-    verified: boolean
-    code: string
-  }
-  emailVerification: {
-    verified: boolean
-    code: string
-  }
-  smsVerification: {
-    verified: boolean
-    code: string
-  }
-  // Add expanded user fields
   firstName: string
   middleName: string
   lastName: string
@@ -57,7 +40,25 @@ interface SettingsState {
   phoneNumber: string
   titlePicture: string
   profilePicture: string
-  // Add to SettingsState interface
+  privacySettings: {
+    profileVisibility: "public" | "followers" | "private"
+    showOnlineStatus: boolean
+    showActivity: boolean
+  }
+  // Verification fields
+  discordVerification: {
+    verified: boolean
+    code: string
+  }
+  emailVerification: {
+    verified: boolean
+    code: string
+  }
+  smsVerification: {
+    verified: boolean
+    code: string
+  }
+  // Authenticator setup
   authenticatorSetup: {
     isEnabled: boolean
     qrCode: string
@@ -92,28 +93,9 @@ const Settings: React.FC = () => {
     confirmPassword: "",
     language: "en",
     theme: "system",
-    emailNotifications: true,
-    pushNotifications: true,
+    emailNotifications: false,
+    pushNotifications: false,
     twoFactorAuth: false,
-    privacySettings: {
-      profileVisibility: "public",
-      showOnlineStatus: true,
-      showActivity: true,
-    },
-    // Add verification fields
-    discordVerification: {
-      verified: false,
-      code: "",
-    },
-    emailVerification: {
-      verified: false,
-      code: "",
-    },
-    smsVerification: {
-      verified: false,
-      code: "",
-    },
-    // Add expanded user fields
     firstName: "",
     middleName: "",
     lastName: "",
@@ -130,7 +112,23 @@ const Settings: React.FC = () => {
     phoneNumber: "",
     titlePicture: "",
     profilePicture: "",
-    // Add to the settings state initialization
+    privacySettings: {
+      profileVisibility: "public",
+      showOnlineStatus: true,
+      showActivity: true,
+    },
+    discordVerification: {
+      verified: false,
+      code: "",
+    },
+    emailVerification: {
+      verified: false,
+      code: "",
+    },
+    smsVerification: {
+      verified: false,
+      code: "",
+    },
     authenticatorSetup: {
       isEnabled: false,
       qrCode: "",
@@ -141,33 +139,69 @@ const Settings: React.FC = () => {
     },
   })
 
+  // Update the useEffect that initializes settings with user data
   useEffect(() => {
     if (!isAuthenticated || !user?.userId) {
       setLoading(false)
       return
     }
 
-    // Initialize settings with user data
+    // Initialize settings with user data from Redux store
     setSettings((prev) => ({
-      ...prev,
       email: user.email || "",
       username: user.username || "",
       firstName: user.firstName || "",
       middleName: user.middleName || "",
       lastName: user.lastName || "",
       bio: user.bio || "",
-      address: user.address || {
-        street: "",
-        houseNumber: "",
-        apartment: "",
-        city: "",
-        state: "",
-        country: "",
-        postalCode: "",
+      language: user.language || "en",
+      theme: user.theme || "system",
+      emailNotifications: user.emailNotification || false,
+      pushNotifications: user.pushNotification || false,
+      twoFactorAuth: user.twoFactorEnabled || false,
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+      address: {
+        street: user.address?.street || "",
+        houseNumber: user.address?.houseNumber || "",
+        apartment: user.address?.apartment || "",
+        city: user.address?.city || "",
+        state: user.address?.state || "",
+        country: user.address?.country || "",
+        postalCode: user.address?.postalCode || "",
       },
       phoneNumber: user.phoneNumber || "",
       titlePicture: user.titlePicture || "",
       profilePicture: user.profilePicture || "",
+      privacySettings: {
+        profileVisibility: (user.privacySettings?.visibility || "public") as "public" | "followers" | "private",
+        showOnlineStatus: user.privacySettings?.showOnlineState || true,
+        showActivity: user.privacySettings?.showActivity || true,
+      },
+      // Initialize verification status if available
+      discordVerification: {
+        verified: user.verification?.discord?.verified || false,
+        code: "",
+      },
+      emailVerification: {
+        verified: user.verification?.email?.verified || false,
+        code: "",
+      },
+      smsVerification: {
+        verified: user.verification?.sms?.verified || false,
+        code: "",
+      },
+      // Initialize authenticator setup
+      authenticatorSetup: {
+        isEnabled: user.authenticatorSetup?.isEnabled || false,
+        qrCode: user.authenticatorSetup?.qrCode || "",
+        secret: user.authenticatorSetup?.secret || "",
+        verificationCode: "",
+        recoveryCodesGenerated: user.authenticatorSetup?.recoveryCodesGenerated || false,
+        recoveryCodes: user.authenticatorSetup?.recoveryCodes || [],
+        otpauthUrl: "",
+      },
     }))
 
     // Check for stored notification in localStorage
@@ -287,6 +321,20 @@ const Settings: React.FC = () => {
     }))
   }
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>, type: "profile" | "title") => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setSettings((prev) => ({
+          ...prev,
+          [type === "profile" ? "profilePicture" : "titlePicture"]: reader.result as string,
+        }))
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleVerificationChange = (type: "discord" | "email" | "sms", value: string) => {
     setSettings((prev) => ({
       ...prev,
@@ -297,12 +345,13 @@ const Settings: React.FC = () => {
     }))
   }
 
+  // Update the handleVerify function to correctly update the Redux store
   const handleVerify = async (type: "discord" | "email" | "sms") => {
     setSaving(true)
     try {
       const code = settings[`${type}Verification`].code
 
-      const response = await fetch(`http://localhost:3001/api/auth/verify/${type}`, {
+      const response = await fetch(`http://localhost:3001/api/users/${user?.userId}/verify/${type}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -329,17 +378,39 @@ const Settings: React.FC = () => {
         },
       }))
 
-      // Store notification in localStorage for after reload
-      localStorage.setItem(
-        "settingsNotification",
-        JSON.stringify({
-          type: "success",
-          message: `${type.charAt(0).toUpperCase() + type.slice(1)} verification successful!`,
-        }),
-      )
+      // Update Redux store with verification status
+      if (user) {
+        const updatedUser = {
+          ...user,
+          verification: {
+            ...(user.verification || {}),
+            [type]: {
+              verified: true,
+              code: "",
+            },
+          },
+        } as any
 
-      // Reload the page
-      window.location.reload()
+        // Update Redux store via dispatch
+        dispatch(
+          login({
+            user: updatedUser,
+            csrfToken: csrfToken || "",
+          }),
+        )
+
+        // Store notification in localStorage for after reload
+        localStorage.setItem(
+          "settingsNotification",
+          JSON.stringify({
+            type: "success",
+            message: `${type.charAt(0).toUpperCase() + type.slice(1)} verification successful!`,
+          }),
+        )
+
+        // Reload the page
+        window.location.reload()
+      }
     } catch (error) {
       setNotification({
         type: "error",
@@ -354,7 +425,7 @@ const Settings: React.FC = () => {
     setSaving(true)
     try {
       // Make API call to generate TOTP secret and QR code
-      const response = await fetch("http://localhost:3001/api/auth/2fa/setup", {
+      const response = await fetch(`http://localhost:3001/api/users/${user?.userId}/2fa/setup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -398,6 +469,7 @@ const Settings: React.FC = () => {
     }
   }
 
+  // Update the verifyAuthenticator function to correctly update the Redux store
   const verifyAuthenticator = async () => {
     setSaving(true)
     try {
@@ -406,7 +478,7 @@ const Settings: React.FC = () => {
       }
 
       // Make API call to verify the code and enable 2FA
-      const response = await fetch("http://localhost:3001/api/auth/2fa/verify", {
+      const response = await fetch(`http://localhost:3001/api/users/${user?.userId}/2fa/verify`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -435,15 +507,17 @@ const Settings: React.FC = () => {
         twoFactorAuth: true,
       }))
 
-      // Update both Redux store and localStorage before reload
+      // Update Redux store
       if (user) {
         const updatedUser = {
           ...user,
           twoFactorEnabled: true,
-        }
-
-        // Update localStorage
-        localStorage.setItem("user", JSON.stringify(updatedUser))
+          authenticatorSetup: {
+            ...(user.authenticatorSetup || {}),
+            isEnabled: true,
+            secret: settings.authenticatorSetup.secret,
+          },
+        } as any
 
         // Update Redux store via dispatch
         dispatch(
@@ -475,11 +549,12 @@ const Settings: React.FC = () => {
     }
   }
 
+  // Update the generateRecoveryCodes function to correctly update the Redux store
   const generateRecoveryCodes = async () => {
     setSaving(true)
     try {
       // Make API call to generate recovery codes
-      const response = await fetch("http://localhost:3001/api/auth/2fa/recovery-codes", {
+      const response = await fetch(`http://localhost:3001/api/users/${user?.userId}/2fa/recovery-codes`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -507,6 +582,26 @@ const Settings: React.FC = () => {
         },
       }))
 
+      // Update Redux store
+      if (user) {
+        const updatedUser = {
+          ...user,
+          authenticatorSetup: {
+            ...(user.authenticatorSetup || {}),
+            recoveryCodesGenerated: true,
+            recoveryCodes: data.recoveryCodes,
+          },
+        } as any
+
+        // Update Redux store via dispatch
+        dispatch(
+          login({
+            user: updatedUser,
+            csrfToken: csrfToken || "",
+          }),
+        )
+      }
+
       // Store notification in localStorage for after reload
       localStorage.setItem(
         "settingsNotification",
@@ -528,11 +623,12 @@ const Settings: React.FC = () => {
     }
   }
 
+  // Update the disableAuthenticator function to correctly update the Redux store
   const disableAuthenticator = async () => {
     setSaving(true)
     try {
       // Make API call to disable 2FA
-      const response = await fetch("http://localhost:3001/api/auth/2fa/disable", {
+      const response = await fetch(`http://localhost:3001/api/users/${user?.userId}/2fa/disable`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -541,6 +637,7 @@ const Settings: React.FC = () => {
         },
         body: JSON.stringify({
           userId: user?.userId,
+          confirmPassword: settings.currentPassword,
         }),
       })
 
@@ -563,15 +660,20 @@ const Settings: React.FC = () => {
         twoFactorAuth: false,
       }))
 
-      // Update both Redux store and localStorage before reload
+      // Update Redux store
       if (user) {
         const updatedUser = {
           ...user,
           twoFactorEnabled: false,
-        }
-
-        // Update localStorage
-        localStorage.setItem("user", JSON.stringify(updatedUser))
+          authenticatorSetup: {
+            isEnabled: false,
+            qrCode: "",
+            secret: "",
+            verificationCode: "",
+            recoveryCodesGenerated: false,
+            recoveryCodes: [],
+          },
+        } as any
 
         // Update Redux store via dispatch
         dispatch(
@@ -580,19 +682,19 @@ const Settings: React.FC = () => {
             csrfToken: csrfToken || "",
           }),
         )
-
-        // Store notification in localStorage for after reload
-        localStorage.setItem(
-          "settingsNotification",
-          JSON.stringify({
-            type: "success",
-            message: "Two-factor authentication disabled",
-          }),
-        )
-
-        // Reload the page to reflect changes
-        window.location.reload()
       }
+
+      // Store notification in localStorage for after reload
+      localStorage.setItem(
+        "settingsNotification",
+        JSON.stringify({
+          type: "success",
+          message: "Two-factor authentication disabled",
+        }),
+      )
+
+      // Reload the page to reflect changes
+      window.location.reload()
     } catch (error) {
       setNotification({
         type: "error",
@@ -633,7 +735,7 @@ const Settings: React.FC = () => {
         }
 
         // Update password
-        const passwordResponse = await fetch("http://localhost:3001/api/users/password", {
+        const passwordResponse = await fetch(`http://localhost:3001/api/users/${user?.userId}/password`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -644,6 +746,7 @@ const Settings: React.FC = () => {
             userId: user?.userId,
             currentPassword: settings.currentPassword,
             newPassword: settings.newPassword,
+            confirmPassword: settings.confirmPassword,
           }),
         })
 
@@ -705,35 +808,29 @@ const Settings: React.FC = () => {
 
         const updatedUserData = await profileResponse.json()
 
-        // Make sure all required fields from User interface are provided as non-undefined values
         if (user) {
           const updatedUser = {
-            identifier: user.identifier || "",
-            socketId: user.socketId || "",
-            accessToken: user.accessToken || "",
-            refreshToken: user.refreshToken || "",
-            userId: user.userId || "",
+            ...user,
             username: updatedUserData.username || settings.username,
             email: updatedUserData.email || settings.email,
-            role: user.role || "",
-            titlePicture: updatedUserData.titlePicture || settings.titlePicture,
-            profilePicture: updatedUserData.profilePicture || settings.profilePicture,
-            bio: updatedUserData.bio || settings.bio,
             firstName: updatedUserData.firstName || settings.firstName,
             middleName: updatedUserData.middleName || settings.middleName,
             lastName: updatedUserData.lastName || settings.lastName,
-            address: updatedUserData.address || settings.address,
+            bio: updatedUserData.bio || settings.bio,
+            address: {
+              street: settings.address.street,
+              houseNumber: settings.address.houseNumber,
+              apartment: settings.address.apartment,
+              city: settings.address.city,
+              state: settings.address.state,
+              country: settings.address.country,
+              postalCode: settings.address.postalCode,
+            },
             phoneNumber: updatedUserData.phoneNumber || settings.phoneNumber,
-            follower: user.follower || [],
-            following: user.following || [],
-            posts: user.posts || [],
-            twoFactorEnabled: user.twoFactorEnabled || false,
-            createdAt: user.createdAt || new Date(),
+            titlePicture: updatedUserData.titlePicture || settings.titlePicture,
+            profilePicture: updatedUserData.profilePicture || settings.profilePicture,
             updatedAt: new Date(),
-          }
-
-          // Update both Redux store and localStorage before reload
-          localStorage.setItem("user", JSON.stringify(updatedUser))
+          } as any
 
           // Update Redux store via dispatch
           dispatch(
@@ -760,7 +857,7 @@ const Settings: React.FC = () => {
 
       // Update privacy settings
       if (activeTab === "privacy") {
-        const privacyResponse = await fetch(`http://localhost:3001/api/users/${user?.userId}/privacy`, {
+        const privacyResponse = await fetch(`http://localhost:3001/api/users/${user?.userId}/settings/privacy`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -768,13 +865,37 @@ const Settings: React.FC = () => {
             csrfToken: csrfToken || "",
           },
           body: JSON.stringify({
-            privacySettings: settings.privacySettings,
+            privacySettings: {
+              visibility: settings.privacySettings.profileVisibility,
+              showOnlineState: settings.privacySettings.showOnlineStatus,
+              showActivity: settings.privacySettings.showActivity,
+            },
           }),
         })
 
         if (!privacyResponse.ok) {
           const errorData = await privacyResponse.json()
           throw new Error(errorData.message || "Failed to update privacy settings")
+        }
+
+        if (user) {
+          const updatedUser = {
+            ...user,
+            privacySettings: {
+              visibility: settings.privacySettings.profileVisibility,
+              showOnlineState: settings.privacySettings.showOnlineStatus,
+              showActivity: settings.privacySettings.showActivity,
+            },
+            updatedAt: new Date(),
+          } as any
+
+          // Update Redux store via dispatch
+          dispatch(
+            login({
+              user: updatedUser,
+              csrfToken: csrfToken || "",
+            }),
+          )
         }
 
         // Store notification in localStorage for after reload
@@ -793,22 +914,43 @@ const Settings: React.FC = () => {
 
       // Update notification settings
       if (activeTab === "notifications") {
-        const notificationResponse = await fetch(`http://localhost:3001/api/users/${user?.userId}/notifications`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.accessToken}`,
-            csrfToken: csrfToken || "",
+        const notificationResponse = await fetch(
+          `http://localhost:3001/api/users/${user?.userId}/settings/notifications`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${user?.accessToken}`,
+              csrfToken: csrfToken || "",
+            },
+            body: JSON.stringify({
+              emailNotification: settings.emailNotifications,
+              pushNotification: settings.pushNotifications,
+            }),
           },
-          body: JSON.stringify({
-            emailNotifications: settings.emailNotifications,
-            pushNotifications: settings.pushNotifications,
-          }),
-        })
+        )
 
         if (!notificationResponse.ok) {
           const errorData = await notificationResponse.json()
           throw new Error(errorData.message || "Failed to update notification settings")
+        }
+
+        // Update Redux store
+        if (user) {
+          const updatedUser = {
+            ...user,
+            emailNotification: settings.emailNotifications,
+            pushNotification: settings.pushNotifications,
+            updatedAt: new Date(),
+          } as any
+
+          // Update Redux store via dispatch
+          dispatch(
+            login({
+              user: updatedUser,
+              csrfToken: csrfToken || "",
+            }),
+          )
         }
 
         // Store notification in localStorage for after reload
@@ -827,36 +969,56 @@ const Settings: React.FC = () => {
 
       // Update preferences
       if (activeTab === "preferences") {
-        const preferencesResponse = await fetch(`http://localhost:3001/api/users/${user?.userId}/preferences`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.accessToken}`,
-            csrfToken: csrfToken || "",
-          },
-          body: JSON.stringify({
-            language: settings.language,
-            theme: settings.theme,
-          }),
-        })
+        const preferencesResponse = await fetch(
+          `http://localhost:3001/api/users/${user?.userId}/settings/preferences`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${user?.accessToken}`,
+              csrfToken: csrfToken || "",
+            },
+            body: JSON.stringify({
+              language: settings.language,
+              theme: settings.theme,
+            }),
+          }
+        );
 
         if (!preferencesResponse.ok) {
-          const errorData = await preferencesResponse.json()
-          throw new Error(errorData.message || "Failed to update preferences")
+          const errorData = await preferencesResponse.json();
+          throw new Error(errorData.message || "Failed to update preferences");
         }
 
-        // Store notification in localStorage for after reload
+        if (user) {
+          const updatedUser = {
+            ...user,
+            language: settings.language,
+            theme: settings.theme,
+            updatedAt: new Date(),
+          } as any;
+
+          if (settings.theme === "light" || settings.theme === "dark") {
+            dispatch(setTheme(settings.theme));
+          }
+
+          dispatch(
+            login({
+              user: updatedUser,
+              csrfToken: csrfToken || "",
+            })
+          );
+        }
+
         localStorage.setItem(
           "settingsNotification",
           JSON.stringify({
             type: "success",
             message: "Preferences updated successfully!",
-          }),
-        )
+          })
+        );
 
-        // Reload the page
-        window.location.reload()
-        return
+        return;
       }
 
       // If we get here, show notification directly (should not happen with the above returns)
@@ -896,6 +1058,9 @@ const Settings: React.FC = () => {
           Authorization: `Bearer ${user?.accessToken}`,
           csrfToken: csrfToken || "",
         },
+        body: JSON.stringify({
+          confirmation: deleteConfirmation,
+        }),
       })
 
       if (!response.ok) {
@@ -938,9 +1103,9 @@ const Settings: React.FC = () => {
     )
   }
 
-  const logoutEverywhere = async () => {
+  const sendVerificationCode = async (type: "email" | "sms") => {
     try {
-      const response = await fetch("http://localhost:3001/api/auth/logout-all", {
+      const response = await fetch(`http://localhost:3001/api/auth/send-verification/${type}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -949,6 +1114,46 @@ const Settings: React.FC = () => {
         },
         body: JSON.stringify({
           userId: user?.userId,
+          [type === "email" ? "email" : "phoneNumber"]: type === "email" ? user?.email : settings.phoneNumber,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || `Failed to send ${type} verification code`)
+      }
+
+      // Store notification in localStorage for after reload
+      localStorage.setItem(
+        "settingsNotification",
+        JSON.stringify({
+          type: "success",
+          message: `Verification code sent to your ${type}`,
+        }),
+      )
+
+      // Reload the page
+      window.location.reload()
+    } catch (error) {
+      setNotification({
+        type: "error",
+        message: error instanceof Error ? error.message : `Failed to send ${type} verification code`,
+      })
+    }
+  }
+
+  const logoutEverywhere = async () => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/users/${user?.userId}/logout-all`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${user?.accessToken}`,
+          csrfToken: csrfToken || "",
+        },
+        body: JSON.stringify({
+          userId: user?.userId,
+          confirmPassword: settings.currentPassword,
         }),
       })
 
@@ -1005,11 +1210,10 @@ const Settings: React.FC = () => {
                 <nav className="space-y-1">
                   <button
                     onClick={() => setActiveTab("account")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "account"
-                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "account"
+                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
                   >
                     <User className="mr-3 h-5 w-5" />
                     <span>Account</span>
@@ -1017,11 +1221,10 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("security")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "security"
-                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "security"
+                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
                   >
                     <Lock className="mr-3 h-5 w-5" />
                     <span>Security</span>
@@ -1029,23 +1232,21 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("verification")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "verification"
-                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "verification"
+                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
                   >
-                    <Shield className="mr-3 h-5 w-5" />
+                    <ShieldCheck className="mr-3 h-5 w-5" />
                     <span>Verification</span>
                   </button>
 
                   <button
                     onClick={() => setActiveTab("notifications")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "notifications"
-                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "notifications"
+                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
                   >
                     <Bell className="mr-3 h-5 w-5" />
                     <span>Notifications</span>
@@ -1053,23 +1254,21 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("privacy")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "privacy"
-                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "privacy"
+                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
                   >
-                    <Shield className="mr-3 h-5 w-5" />
+                    <EyeOff className="mr-3 h-5 w-5" />
                     <span>Privacy</span>
                   </button>
 
                   <button
                     onClick={() => setActiveTab("preferences")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "preferences"
-                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "preferences"
+                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
                   >
                     <Globe className="mr-3 h-5 w-5" />
                     <span>Preferences</span>
@@ -1077,11 +1276,10 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("danger")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "danger"
-                        ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "danger"
+                      ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
                   >
                     <AlertTriangle className="mr-3 h-5 w-5" />
                     <span>Danger Zone</span>
@@ -1382,12 +1580,19 @@ const Settings: React.FC = () => {
                                 <User className="w-8 h-8 text-gray-400" />
                               )}
                             </div>
-                            <button
-                              type="button"
-                              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                            <label
+                              htmlFor="profile-image-input"
+                              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                             >
                               Change
-                            </button>
+                              <input
+                                type="file"
+                                id="profile-image-input"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleImageChange(e, "profile")}
+                              />
+                            </label>
                           </div>
                         </div>
 
@@ -1410,12 +1615,19 @@ const Settings: React.FC = () => {
                                 <div className="text-gray-400 text-xs">No image</div>
                               )}
                             </div>
-                            <button
-                              type="button"
-                              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                            <label
+                              htmlFor="title-image-input"
+                              className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors cursor-pointer"
                             >
                               Change
-                            </button>
+                              <input
+                                type="file"
+                                id="title-image-input"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => handleImageChange(e, "title")}
+                              />
+                            </label>
                           </div>
                         </div>
                       </div>
@@ -1770,6 +1982,104 @@ const Settings: React.FC = () => {
                           </div>
                         )}
                       </div>
+
+                      {/* Email Verification */}
+                      <div className="p-5 border border-gray-200 dark:border-gray-700 rounded-xl">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Email Verification</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              Verify your account using a code sent to your email
+                            </p>
+                          </div>
+                          {settings.emailVerification.verified ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                              <CheckCircle className="mr-1 h-4 w-4" />
+                              Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                              Unverified
+                            </span>
+                          )}
+                        </div>
+
+                        {!settings.emailVerification.verified && (
+                          <div className="mt-4">
+                            <div className="flex space-x-2">
+                              <input
+                                type="text"
+                                placeholder="Enter verification code"
+                                value={settings.emailVerification.code}
+                                onChange={(e) => handleVerificationChange("email", e.target.value)}
+                                className="flex-1 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              <button
+                                onClick={() => handleVerify("email")}
+                                disabled={!settings.emailVerification.code || saving}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                              >
+                                {saving ? "Verifying..." : "Verify"}
+                              </button>
+                            </div>
+                            <button
+                              className="text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2"
+                              onClick={() => sendVerificationCode("email")}
+                            >
+                              Send verification code
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* SMS Verification */}
+                      <div className="p-5 border border-gray-200 dark:border-gray-700 rounded-xl">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">SMS Verification</h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                              Verify your account using a code sent to your phone
+                            </p>
+                          </div>
+                          {settings.smsVerification.verified ? (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                              <CheckCircle className="mr-1 h-4 w-4" />
+                              Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                              Unverified
+                            </span>
+                          )}
+                        </div>
+
+                        {!settings.smsVerification.verified && (
+                          <div className="mt-4">
+                            <div className="flex space-x-2">
+                              <input
+                                type="text"
+                                placeholder="Enter SMS code"
+                                value={settings.smsVerification.code}
+                                onChange={(e) => handleVerificationChange("sms", e.target.value)}
+                                className="flex-1 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                              <button
+                                onClick={() => handleVerify("sms")}
+                                disabled={!settings.smsVerification.code || saving}
+                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+                              >
+                                {saving ? "Verifying..." : "Verify"}
+                              </button>
+                            </div>
+                            <button
+                              className="text-sm text-blue-600 dark:text-blue-400 hover:underline mt-2"
+                              onClick={() => sendVerificationCode("sms")}
+                            >
+                              Send SMS code
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -2016,7 +2326,6 @@ const Settings: React.FC = () => {
                         >
                           <option value="light">Light</option>
                           <option value="dark">Dark</option>
-                          <option value="system">System Default</option>
                         </select>
                       </div>
 
@@ -2105,11 +2414,10 @@ const Settings: React.FC = () => {
             {/* Notification */}
             {notification.type && (
               <div
-                className={`mt-4 p-4 rounded-xl flex items-start ${
-                  notification.type === "success"
-                    ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300"
-                    : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300"
-                }`}
+                className={`mt-4 p-4 rounded-xl flex items-start ${notification.type === "success"
+                  ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300"
+                  : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300"
+                  }`}
               >
                 {notification.type === "success" ? (
                   <CheckCircle className="h-5 w-5 mr-3 flex-shrink-0" />
