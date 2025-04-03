@@ -421,12 +421,6 @@ export const Economy = () => {
                             >
                                 Work
                             </button>
-                            <button
-                                className={`px-6 py-3 font-medium ${activeTab === "history" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500 hover:text-gray-700"}`}
-                                onClick={() => setActiveTab("history")}
-                            >
-                                History
-                            </button>
                         </div>
 
                         <div className="p-6">
@@ -722,40 +716,6 @@ export const Economy = () => {
                                             ))}
                                         </div>
                                     )}
-                                </div>
-                            )}
-
-                            {/* History Tab */}
-                            {activeTab === "history" && (
-                                <div>
-                                    <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">Transaction History</h2>
-
-                                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                                        {financialData.transactions.length > 0 ? (
-                                            financialData.transactions.map((transaction) => (
-                                                <div
-                                                    key={transaction.id}
-                                                    className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center"
-                                                >
-                                                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mr-4">
-                                                        <span className="text-lg">{getTransactionIcon(transaction.type)}</span>
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <p className="font-medium text-gray-800 dark:text-white">{transaction.description}</p>
-                                                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                                                            {formatDate(transaction.timestamp)}
-                                                        </p>
-                                                    </div>
-                                                    <div className={`font-medium ${getTransactionColor(transaction.type, transaction.amount)}`}>
-                                                        {transaction.amount > 0 ? "+" : ""}
-                                                        {transaction.amount} gold
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="p-8 text-center text-gray-500 dark:text-gray-400">No transactions found.</div>
-                                        )}
-                                    </div>
                                 </div>
                             )}
                         </div>

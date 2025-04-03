@@ -109,7 +109,7 @@ export const Inventory = () => {
             const rarityB = rarityOrder[b.rarity as keyof typeof rarityOrder] || 0
           
             return sortOrder === "asc" ? rarityA - rarityB : rarityB - rarityA
-          })          
+          })
   
           setInventory(items)
           setTotalPages(response.data.totalPages)
