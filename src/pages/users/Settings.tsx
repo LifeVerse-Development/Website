@@ -8,7 +8,21 @@ import type { RootState } from "../../stores/store"
 import Navbar from "../../components/Navbar"
 import Footer from "../../components/Footer"
 import LazyLoading from "../../components/LazyLoading"
-import { Lock, User, Bell, Shield, Globe, AlertTriangle, Save, CheckCircle, Trash2, LogOut, X, ShieldCheck, EyeOff } from "lucide-react"
+import {
+  Lock,
+  User,
+  Bell,
+  Shield,
+  Globe,
+  AlertTriangle,
+  Save,
+  CheckCircle,
+  Trash2,
+  LogOut,
+  X,
+  ShieldCheck,
+  EyeOff,
+} from "lucide-react"
 import { login } from "../../stores/authSlice"
 import { setTheme } from "../../stores/themeSlice"
 
@@ -279,11 +293,22 @@ const Settings: React.FC = () => {
         ...prev,
         [name]: checked,
       }))
+
+      // For immediate theme changes
+      if (name === "theme" && (value === "light" || value === "dark")) {
+        dispatch(setTheme(value as "light" | "dark"))
+        updateReduxStore({ [name]: value })
+      }
     } else {
       setSettings((prev) => ({
         ...prev,
         [name]: value,
       }))
+
+      // For immediate language or theme changes
+      if (name === "language" || name === "theme") {
+        updateReduxStore({ [name]: value })
+      }
     }
   }
 
@@ -299,6 +324,14 @@ const Settings: React.FC = () => {
           [name]: checked,
         },
       }))
+
+      // Update Redux store with privacy changes
+      updateReduxStore({
+        privacySettings: {
+          ...user?.privacySettings,
+          [name]: checked,
+        },
+      })
     } else {
       setSettings((prev) => ({
         ...prev,
@@ -307,6 +340,14 @@ const Settings: React.FC = () => {
           [name]: value,
         },
       }))
+
+      // Update Redux store with privacy changes
+      updateReduxStore({
+        privacySettings: {
+          ...user?.privacySettings,
+          [name]: value,
+        },
+      })
     }
   }
 
@@ -444,21 +485,44 @@ const Settings: React.FC = () => {
 
       const data = await response.json()
 
-      // Set the QR code and secret from the API response
-      setSettings((prev) => ({
-        ...prev,
-        authenticatorSetup: {
-          ...prev.authenticatorSetup,
-          qrCode: data.qrCodeUrl,
-          secret: data.secret,
-          otpauthUrl: data.otpauthUrl,
-        },
-      }))
+      // Update Redux store with the new authenticator setup data
+      if (user) {
+        const updatedUser = {
+          ...user,
+          authenticatorSetup: {
+            ...(user.authenticatorSetup || {}),
+            qrCode: data.qrCodeUrl,
+            secret: data.secret,
+            otpauthUrl: data.otpauthUrl,
+          },
+          updatedAt: new Date(),
+        } as any
 
-      setNotification({
-        type: "success",
-        message: "Authenticator setup initiated. Scan the QR code with your authenticator app.",
-      })
+        // Update Redux store via dispatch
+        dispatch(
+          login({
+            user: updatedUser,
+            csrfToken: csrfToken || "",
+          }),
+        )
+
+        // Store the complete user data in localStorage to ensure persistence across page reload
+        localStorage.setItem("user", JSON.stringify(updatedUser))
+        localStorage.setItem("authToken", user.accessToken)
+        localStorage.setItem("csrfToken", csrfToken || "")
+      }
+
+      // Store notification in localStorage for after reload
+      localStorage.setItem(
+        "settingsNotification",
+        JSON.stringify({
+          type: "success",
+          message: "Authenticator setup initiated. Scan the QR code with your authenticator app.",
+        }),
+      )
+
+      // Reload the page to fetch fresh data from the database
+      window.location.reload()
     } catch (error) {
       setNotification({
         type: "error",
@@ -714,6 +778,25 @@ const Settings: React.FC = () => {
         verificationCode: value,
       },
     }))
+  }
+
+  // Helper function to update Redux store with user changes
+  const updateReduxStore = (updatedUserData: any) => {
+    if (user) {
+      const updatedUser = {
+        ...user,
+        ...updatedUserData,
+        updatedAt: new Date(),
+      }
+
+      // Update Redux store via dispatch
+      dispatch(
+        login({
+          user: updatedUser,
+          csrfToken: csrfToken || "",
+        }),
+      )
+    }
   }
 
   const handleSaveSettings = async () => {
@@ -982,12 +1065,12 @@ const Settings: React.FC = () => {
               language: settings.language,
               theme: settings.theme,
             }),
-          }
-        );
+          },
+        )
 
         if (!preferencesResponse.ok) {
-          const errorData = await preferencesResponse.json();
-          throw new Error(errorData.message || "Failed to update preferences");
+          const errorData = await preferencesResponse.json()
+          throw new Error(errorData.message || "Failed to update preferences")
         }
 
         if (user) {
@@ -996,18 +1079,18 @@ const Settings: React.FC = () => {
             language: settings.language,
             theme: settings.theme,
             updatedAt: new Date(),
-          } as any;
+          } as any
 
           if (settings.theme === "light" || settings.theme === "dark") {
-            dispatch(setTheme(settings.theme));
+            dispatch(setTheme(settings.theme))
           }
 
           dispatch(
             login({
               user: updatedUser,
               csrfToken: csrfToken || "",
-            })
-          );
+            }),
+          )
         }
 
         localStorage.setItem(
@@ -1015,10 +1098,12 @@ const Settings: React.FC = () => {
           JSON.stringify({
             type: "success",
             message: "Preferences updated successfully!",
-          })
-        );
+          }),
+        )
 
-        return;
+        // Reload the page to reflect changes
+        window.location.reload()
+        return
       }
 
       // If we get here, show notification directly (should not happen with the above returns)
@@ -1210,10 +1295,11 @@ const Settings: React.FC = () => {
                 <nav className="space-y-1">
                   <button
                     onClick={() => setActiveTab("account")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "account"
-                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                      activeTab === "account"
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    }`}
                   >
                     <User className="mr-3 h-5 w-5" />
                     <span>Account</span>
@@ -1221,10 +1307,11 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("security")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "security"
-                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                      activeTab === "security"
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    }`}
                   >
                     <Lock className="mr-3 h-5 w-5" />
                     <span>Security</span>
@@ -1232,10 +1319,11 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("verification")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "verification"
-                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                      activeTab === "verification"
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    }`}
                   >
                     <ShieldCheck className="mr-3 h-5 w-5" />
                     <span>Verification</span>
@@ -1243,10 +1331,11 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("notifications")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "notifications"
-                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                      activeTab === "notifications"
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    }`}
                   >
                     <Bell className="mr-3 h-5 w-5" />
                     <span>Notifications</span>
@@ -1254,10 +1343,11 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("privacy")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "privacy"
-                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                      activeTab === "privacy"
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    }`}
                   >
                     <EyeOff className="mr-3 h-5 w-5" />
                     <span>Privacy</span>
@@ -1265,10 +1355,11 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("preferences")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "preferences"
-                      ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                      activeTab === "preferences"
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    }`}
                   >
                     <Globe className="mr-3 h-5 w-5" />
                     <span>Preferences</span>
@@ -1276,10 +1367,11 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("danger")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "danger"
-                      ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                      }`}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
+                      activeTab === "danger"
+                        ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                    }`}
                   >
                     <AlertTriangle className="mr-3 h-5 w-5" />
                     <span>Danger Zone</span>
@@ -2326,6 +2418,7 @@ const Settings: React.FC = () => {
                         >
                           <option value="light">Light</option>
                           <option value="dark">Dark</option>
+                          <option value="system">System</option>
                         </select>
                       </div>
 
@@ -2414,10 +2507,11 @@ const Settings: React.FC = () => {
             {/* Notification */}
             {notification.type && (
               <div
-                className={`mt-4 p-4 rounded-xl flex items-start ${notification.type === "success"
-                  ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300"
-                  : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300"
-                  }`}
+                className={`mt-4 p-4 rounded-xl flex items-start ${
+                  notification.type === "success"
+                    ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300"
+                    : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300"
+                }`}
               >
                 {notification.type === "success" ? (
                   <CheckCircle className="h-5 w-5 mr-3 flex-shrink-0" />
@@ -2433,8 +2527,6 @@ const Settings: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Delete Account Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
@@ -2499,7 +2591,6 @@ const Settings: React.FC = () => {
           </div>
         </div>
       )}
-
       <Footer />
     </div>
   )
