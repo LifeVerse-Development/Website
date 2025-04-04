@@ -104,7 +104,7 @@ const Checkout: React.FC = () => {
 
   const taxRate = 0.19
   const tax = subtotal * taxRate
-  const total = subtotal + shippingCost + tax
+  const total = subtotal + tax + shippingCost
 
   // Detect user's location and set currency
   useEffect(() => {
@@ -316,16 +316,16 @@ const Checkout: React.FC = () => {
         billing: formData.billingAddressSame
           ? null
           : {
-              address: {
-                line1: formData.billingAddress?.address || "",
-                line2: formData.billingAddress?.apartment || "",
-                city: formData.billingAddress?.city || "",
-                state: formData.billingAddress?.state || "",
-                postal_code: formData.billingAddress?.postalCode || "",
-                country: formData.billingAddress?.country || "",
-              },
-              name: `${formData.billingAddress?.firstName || ""} ${formData.billingAddress?.lastName || ""}`,
+            address: {
+              line1: formData.billingAddress?.address || "",
+              line2: formData.billingAddress?.apartment || "",
+              city: formData.billingAddress?.city || "",
+              state: formData.billingAddress?.state || "",
+              postal_code: formData.billingAddress?.postalCode || "",
+              country: formData.billingAddress?.country || "",
             },
+            name: `${formData.billingAddress?.firstName || ""} ${formData.billingAddress?.lastName || ""}`,
+          },
         amount: {
           subtotal,
           shipping: shippingCost,
@@ -346,13 +346,15 @@ const Checkout: React.FC = () => {
 
       const data = response.data
 
+      // Clear the cart before redirecting to Stripe
+      dispatch(clearCart())
+
       if (data.redirectUrl) {
         console.log("Redirecting to Stripe:", data.redirectUrl)
         window.location.href = data.redirectUrl
         return
       }
 
-      dispatch(clearCart())
       setCurrentStep("confirmation")
       showToast("Payment Successful", "Your order has been placed successfully!", "success")
     } catch (err) {
@@ -1017,11 +1019,10 @@ const Checkout: React.FC = () => {
                                 className="sr-only"
                               />
                               <div
-                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                                  formData.shippingMethod === "standard"
+                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${formData.shippingMethod === "standard"
                                     ? "border-blue-600 dark:border-blue-500"
                                     : "border-gray-300 dark:border-gray-600"
-                                }`}
+                                  }`}
                               >
                                 {formData.shippingMethod === "standard" && (
                                   <div className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-500"></div>
@@ -1052,11 +1053,10 @@ const Checkout: React.FC = () => {
                                 className="sr-only"
                               />
                               <div
-                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                                  formData.shippingMethod === "express"
+                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${formData.shippingMethod === "express"
                                     ? "border-blue-600 dark:border-blue-500"
                                     : "border-gray-300 dark:border-gray-600"
-                                }`}
+                                  }`}
                               >
                                 {formData.shippingMethod === "express" && (
                                   <div className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-500"></div>
@@ -1087,11 +1087,10 @@ const Checkout: React.FC = () => {
                                 className="sr-only"
                               />
                               <div
-                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                                  formData.shippingMethod === "overnight"
+                                className={`w-5 h-5 rounded-full border flex items-center justify-center ${formData.shippingMethod === "overnight"
                                     ? "border-blue-600 dark:border-blue-500"
                                     : "border-gray-300 dark:border-gray-600"
-                                }`}
+                                  }`}
                               >
                                 {formData.shippingMethod === "overnight" && (
                                   <div className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-500"></div>
@@ -1122,11 +1121,10 @@ const Checkout: React.FC = () => {
                           className="sr-only"
                         />
                         <div
-                          className={`w-5 h-5 border rounded flex items-center justify-center ${
-                            formData.saveInfo
+                          className={`w-5 h-5 border rounded flex items-center justify-center ${formData.saveInfo
                               ? "bg-blue-600 border-blue-600 dark:bg-blue-500 dark:border-blue-500"
                               : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
-                          }`}
+                            }`}
                         >
                           {formData.saveInfo && <Check className="h-3 w-3 text-white" />}
                         </div>
@@ -1218,11 +1216,10 @@ const Checkout: React.FC = () => {
                             className="sr-only"
                           />
                           <div
-                            className={`w-5 h-5 border rounded flex items-center justify-center ${
-                              formData.billingAddressSame
+                            className={`w-5 h-5 border rounded flex items-center justify-center ${formData.billingAddressSame
                                 ? "bg-blue-600 border-blue-600 dark:bg-blue-500 dark:border-blue-500"
                                 : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700"
-                            }`}
+                              }`}
                           >
                             {formData.billingAddressSame && <Check className="h-3 w-3 text-white" />}
                           </div>
@@ -1841,22 +1838,20 @@ const Checkout: React.FC = () => {
     return (
       <div className="fixed bottom-4 right-4 z-50 max-w-md">
         <div
-          className={`rounded-lg shadow-lg p-4 flex items-start ${
-            toast.type === "success"
+          className={`rounded-lg shadow-lg p-4 flex items-start ${toast.type === "success"
               ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
               : toast.type === "error"
                 ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
                 : "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
-          }`}
+            }`}
         >
           <div
-            className={`flex-shrink-0 mr-3 ${
-              toast.type === "success"
+            className={`flex-shrink-0 mr-3 ${toast.type === "success"
                 ? "text-green-500 dark:text-green-400"
                 : toast.type === "error"
                   ? "text-red-500 dark:text-red-400"
                   : "text-blue-500 dark:text-blue-400"
-            }`}
+              }`}
           >
             {toast.type === "success" ? (
               <CheckCircle className="h-5 w-5" />
@@ -1868,24 +1863,22 @@ const Checkout: React.FC = () => {
           </div>
           <div className="flex-1">
             <h3
-              className={`text-sm font-medium ${
-                toast.type === "success"
+              className={`text-sm font-medium ${toast.type === "success"
                   ? "text-green-800 dark:text-green-300"
                   : toast.type === "error"
                     ? "text-red-800 dark:text-red-300"
                     : "text-blue-800 dark:text-blue-300"
-              }`}
+                }`}
             >
               {toast.title}
             </h3>
             <p
-              className={`mt-1 text-sm ${
-                toast.type === "success"
+              className={`mt-1 text-sm ${toast.type === "success"
                   ? "text-green-700 dark:text-green-400"
                   : toast.type === "error"
                     ? "text-red-700 dark:text-red-400"
                     : "text-blue-700 dark:text-blue-400"
-              }`}
+                }`}
             >
               {toast.message}
             </p>

@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
-import { XCircle, RefreshCw, HelpCircle } from 'lucide-react'
+import { XCircle, RefreshCw, HelpCircle } from "lucide-react"
 
 const FailedPayment: React.FC = () => {
   const navigate = useNavigate()

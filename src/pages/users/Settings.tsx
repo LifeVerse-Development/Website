@@ -8,6 +8,8 @@ import type { RootState } from "../../stores/store"
 import Navbar from "../../components/Navbar"
 import Footer from "../../components/Footer"
 import LazyLoading from "../../components/LazyLoading"
+import PaymentHistory from "../../components/PaymentHistory"
+import PaymentDetails from "../../components/PaymentDetails"
 import {
   Lock,
   User,
@@ -22,6 +24,7 @@ import {
   X,
   ShieldCheck,
   EyeOff,
+  ShoppingBag,
 } from "lucide-react"
 import { login } from "../../stores/authSlice"
 import { setTheme } from "../../stores/themeSlice"
@@ -98,6 +101,7 @@ const Settings: React.FC = () => {
   }>({ type: null, message: "" })
   const [deleteConfirmation, setDeleteConfirmation] = useState("")
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null)
 
   const [settings, setSettings] = useState<SettingsState>({
     email: "",
@@ -1295,11 +1299,10 @@ const Settings: React.FC = () => {
                 <nav className="space-y-1">
                   <button
                     onClick={() => setActiveTab("account")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "account"
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "account"
                         ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                      }`}
                   >
                     <User className="mr-3 h-5 w-5" />
                     <span>Account</span>
@@ -1307,11 +1310,10 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("security")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "security"
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "security"
                         ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                      }`}
                   >
                     <Lock className="mr-3 h-5 w-5" />
                     <span>Security</span>
@@ -1319,11 +1321,10 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("verification")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "verification"
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "verification"
                         ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                      }`}
                   >
                     <ShieldCheck className="mr-3 h-5 w-5" />
                     <span>Verification</span>
@@ -1331,11 +1332,10 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("notifications")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "notifications"
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "notifications"
                         ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                      }`}
                   >
                     <Bell className="mr-3 h-5 w-5" />
                     <span>Notifications</span>
@@ -1343,11 +1343,10 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("privacy")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "privacy"
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "privacy"
                         ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                      }`}
                   >
                     <EyeOff className="mr-3 h-5 w-5" />
                     <span>Privacy</span>
@@ -1355,23 +1354,35 @@ const Settings: React.FC = () => {
 
                   <button
                     onClick={() => setActiveTab("preferences")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "preferences"
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "preferences"
                         ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                      }`}
                   >
                     <Globe className="mr-3 h-5 w-5" />
                     <span>Preferences</span>
                   </button>
 
                   <button
+                    onClick={() => {
+                      setActiveTab("payments")
+                      setSelectedPaymentId(null)
+                    }}
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "payments"
+                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      }`}
+                  >
+                    <ShoppingBag className="mr-3 h-5 w-5" />
+                    <span>Payments</span>
+                  </button>
+
+                  <button
                     onClick={() => setActiveTab("danger")}
-                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${
-                      activeTab === "danger"
+                    className={`w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-colors ${activeTab === "danger"
                         ? "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                    }`}
+                      }`}
                   >
                     <AlertTriangle className="mr-3 h-5 w-5" />
                     <span>Danger Zone</span>
@@ -2464,6 +2475,24 @@ const Settings: React.FC = () => {
                   </div>
                 )}
 
+                {/* Payments History */}
+                {activeTab === "payments" && (
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Payment History</h2>
+
+                    {selectedPaymentId ? (
+                      <PaymentDetails paymentId={selectedPaymentId} onBack={() => setSelectedPaymentId(null)} />
+                    ) : (
+                      <>
+                        <p className="text-gray-600 dark:text-gray-400 mb-6">
+                          View your past orders and payment details
+                        </p>
+                        <PaymentHistory onViewPayment={(paymentId) => setSelectedPaymentId(paymentId)} />
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* Danger Zone */}
                 {activeTab === "danger" && (
                   <div>
@@ -2507,11 +2536,10 @@ const Settings: React.FC = () => {
             {/* Notification */}
             {notification.type && (
               <div
-                className={`mt-4 p-4 rounded-xl flex items-start ${
-                  notification.type === "success"
+                className={`mt-4 p-4 rounded-xl flex items-start ${notification.type === "success"
                     ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300"
                     : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300"
-                }`}
+                  }`}
               >
                 {notification.type === "success" ? (
                   <CheckCircle className="h-5 w-5 mr-3 flex-shrink-0" />

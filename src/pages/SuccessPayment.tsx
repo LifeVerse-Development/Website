@@ -2,45 +2,15 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux"
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useNavigate, useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import type { RootState } from "../stores/store"
-import { CheckCircle, Download, Home } from 'lucide-react';
-import { config } from "../assets/config";
+import { CheckCircle, Home } from 'lucide-react';
 
 const SuccessPayment: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { user } = useSelector((state: RootState) => state.auth)
   const [countdown, setCountdown] = useState(10);
-  const [paymentData, setPaymentData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  const queryParams = new URLSearchParams(location.search);
-  const sessionId = queryParams.get("session_id");
-
-  useEffect(() => {
-    if (sessionId) {
-      fetch(`${config.apiUrl}/api/payments/${sessionId}`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${user?.accessToken || ""}`,
-        },
-      })
-        .then(response => response.json())
-        .then(data => {
-          setPaymentData(data);
-          setLoading(false);
-        })
-        .catch(error => {
-          console.error("Fehler beim Abrufen der Zahlungsdaten:", error);
-          setLoading(false);
-        });
-    }
-  }, [sessionId, user]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -56,10 +26,6 @@ const SuccessPayment: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [navigate]);
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a]">
@@ -80,7 +46,6 @@ const SuccessPayment: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="max-w-lg w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden text-center p-8"
           >
-            <div className="h-2 bg-gradient-to-r from-green-500 to-emerald-500 absolute top-0 left-0 right-0"></div>
             <div className="w-24 h-24 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
             </div>
@@ -90,41 +55,11 @@ const SuccessPayment: React.FC = () => {
               aktualisiert.
             </p>
 
-            <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Bestellübersicht</h2>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600 dark:text-gray-400">Produkt:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{paymentData.productName}</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600 dark:text-gray-400">Betrag:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{paymentData.amount} €</span>
-              </div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-600 dark:text-gray-400">Bestellnummer:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{paymentData.orderId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Datum:</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {new Date(paymentData.date).toLocaleDateString("de-DE")}
-                </span>
-              </div>
-            </div>
-
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
               <motion.button
                 whileHover={{ y: -3 }}
-                onClick={() => navigate("/downloads")}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium transition-all hover:shadow-lg"
-              >
-                <Download className="h-5 w-5" />
-                <span>Jetzt herunterladen</span>
-              </motion.button>
-              <motion.button
-                whileHover={{ y: -3 }}
                 onClick={() => navigate("/")}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl font-medium transition-colors hover:bg-gray-300 dark:hover:bg-gray-600"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium transition-all hover:shadow-lg"
               >
                 <Home className="h-5 w-5" />
                 <span>Zur Startseite</span>
