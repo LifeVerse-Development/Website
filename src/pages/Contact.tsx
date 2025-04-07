@@ -5,14 +5,30 @@ import { useState } from "react"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
 
+interface ContactFormData {
+    identifier?: string
+    name: string
+    email: string
+    phone: string
+    message: string
+    replied?: boolean
+}
+
 const Contact: React.FC = () => {
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<ContactFormData>({
         name: "",
         email: "",
+        phone: "",
         message: "",
     })
 
-    const [status, setStatus] = useState<string | null>(null)
+    const [status, setStatus] = useState<{
+        type: "idle" | "loading" | "success" | "error"
+        message: string | null
+    }>({
+        type: "idle",
+        message: null,
+    })
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
@@ -22,15 +38,56 @@ const Contact: React.FC = () => {
         })
     }
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setStatus("Submitting...")
 
-        // Simulating form submission
-        setTimeout(() => {
-            setStatus("Thank you for contacting us! We will get back to you soon.")
-            setFormData({ name: "", email: "", message: "" })
-        }, 2000)
+        // Set loading state
+        setStatus({
+            type: "loading",
+            message: "Submitting your message...",
+        })
+
+        try {
+            // Prepare the data according to the model
+            const contactData: ContactFormData = {
+                ...formData,
+                replied: false,
+            }
+
+            // Send the data to the API endpoint
+            const response = await fetch("http://localhost:3001/api/contacts", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(contactData),
+            })
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status}`)
+            }
+
+            const result = await response.json()
+
+            // Reset form and show success message with the identifier from the response
+            setFormData({
+                name: "",
+                email: "",
+                phone: "",
+                message: "",
+            })
+
+            setStatus({
+                type: "success",
+                message: `Thank you for contacting us! Your request has been received with ID: ${result.identifier}. We will get back to you soon.`,
+            })
+        } catch (error) {
+            console.error("Error submitting form:", error)
+            setStatus({
+                type: "error",
+                message: "There was an error submitting your message. Please try again later.",
+            })
+        }
     }
 
     return (
@@ -434,30 +491,86 @@ const Contact: React.FC = () => {
 
                                         <div>
                                             <label
+                                                htmlFor="phone"
+                                                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                            >
+                                                Phone Number
+                                            </label>
+                                            <div className="relative rounded-md shadow-sm">
+                                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <svg
+                                                        className="h-5 w-5 text-gray-400"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                                                        />
+                                                    </svg>
+                                                </div>
+                                                <input
+                                                    id="phone"
+                                                    type="tel"
+                                                    name="phone"
+                                                    value={formData.phone}
+                                                    onChange={handleChange}
+                                                    required
+                                                    className="pl-10 block w-full rounded-xl border-gray-300 dark:border-gray-600 shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white py-3"
+                                                    placeholder="+1 (555) 123-4567"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label
                                                 htmlFor="message"
                                                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
                                             >
                                                 Your Message
                                             </label>
-                                            <textarea
-                                                id="message"
-                                                name="message"
-                                                value={formData.message}
-                                                onChange={handleChange}
-                                                required
-                                                rows={5}
-                                                className="block w-full rounded-xl border-gray-300 dark:border-gray-600 shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white py-3 resize-none"
-                                                placeholder="How can we help you today?"
-                                            />
+                                            <div className="relative rounded-md shadow-sm">
+                                                <div className="absolute top-3 left-3 flex items-center pointer-events-none">
+                                                    <svg
+                                                        className="h-5 w-5 text-gray-400"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"
+                                                        />
+                                                    </svg>
+                                                </div>
+                                                <textarea
+                                                    id="message"
+                                                    name="message"
+                                                    value={formData.message}
+                                                    onChange={handleChange}
+                                                    required
+                                                    rows={5}
+                                                    className="pl-10 pt-3 block w-full rounded-xl border-gray-300 dark:border-gray-600 shadow-sm focus:ring-teal-500 focus:border-teal-500 sm:text-sm dark:bg-gray-700 dark:text-white py-3 resize-none"
+                                                    placeholder="How can we help you today?"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
 
                                     <div>
                                         <button
                                             type="submit"
-                                            className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 shadow-sm transition-all duration-300"
+                                            disabled={status.type === "loading"}
+                                            className="w-full inline-flex justify-center items-center px-6 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 shadow-sm transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed"
                                         >
-                                            {status === "Submitting..." ? (
+                                            {status.type === "loading" ? (
                                                 <>
                                                     <svg
                                                         className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -504,8 +617,13 @@ const Contact: React.FC = () => {
                                     </div>
                                 </form>
 
-                                {status && status !== "Submitting..." && (
-                                    <div className="mt-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 flex items-center">
+                                {status.type !== "idle" && status.type !== "loading" && (
+                                    <div
+                                        className={`mt-6 p-4 rounded-xl ${status.type === "success"
+                                            ? "bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200"
+                                            : "bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200"
+                                            } flex items-center`}
+                                    >
                                         <svg
                                             className="h-5 w-5 mr-2 flex-shrink-0"
                                             fill="none"
@@ -517,10 +635,14 @@ const Contact: React.FC = () => {
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
                                                 strokeWidth={2}
-                                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                d={
+                                                    status.type === "success"
+                                                        ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                        : "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                }
                                             />
                                         </svg>
-                                        <span>{status}</span>
+                                        <span>{status.message}</span>
                                     </div>
                                 )}
                             </div>

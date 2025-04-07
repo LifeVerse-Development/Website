@@ -8,7 +8,7 @@ import { logout } from "../stores/authSlice"
 import { removeItem, updateQuantity, clearCart } from "../stores/cartSlice"
 import type { RootState } from "../stores/store"
 import ThemeToggle from "./ThemeToggle"
-import { Menu, X, ChevronDown, Home, ShoppingBag, Newspaper, Mail, LogOut, Settings, User, History, TicketCheck, LayoutDashboard, ShoppingCart, Trash, Plus, Minus, Activity, TowerControl } from 'lucide-react'
+import { Menu, X, ChevronDown, Home, ShoppingBag, Newspaper, LogOut, Settings, User, TicketCheck, LayoutDashboard, ShoppingCart, Trash, Plus, Minus, Activity, TowerControl, Ticket } from 'lucide-react'
 
 const Navbar: React.FC = () => {
     const dispatch = useDispatch()
@@ -34,7 +34,12 @@ const Navbar: React.FC = () => {
 
     useEffect(() => {
         if (user?.userId) {
-            fetch(`/api/tickets?userId=${user.userId}`)
+            fetch(`http://localhost:3001/api/tickets?userId=${user.userId}`, {
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    Authorization: `Bearer ${user.accessToken}`,
+                },
+            })
                 .then((response) => response.json())
                 .then((data) => {
                     if (data && data.length > 0) {
@@ -87,7 +92,7 @@ const Navbar: React.FC = () => {
         { name: "News", path: "/news", icon: <Newspaper size={18} /> },
         { name: "Store", path: "/store", icon: <ShoppingBag size={18} /> },
         { name: "Status", path: "/status", icon: <Activity size={18} /> },
-        { name: "Contact", path: "/contact", icon: <Mail size={18} /> },
+        { name: "Support", path: "/support", icon: <Ticket size={18} /> },
     ]
 
     const isActive = (path: string) => location.pathname === path
@@ -209,21 +214,21 @@ const Navbar: React.FC = () => {
                                                                 <div className="flex items-center mt-1">
                                                                     <button
                                                                         onClick={() => dispatch(updateQuantity({ id: item.id, amount: -1 }))}
-                                                                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                                        className="p-1 rounded-full hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
                                                                     >
                                                                         <Minus size={14} />
                                                                     </button>
-                                                                    <span className="mx-2 text-sm">{item.quantity}</span>
+                                                                    <span className="mx-2 text-sm dark:text-white">{item.quantity}</span>
                                                                     <button
                                                                         onClick={() => dispatch(updateQuantity({ id: item.id, amount: 1 }))}
-                                                                        className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                                                                        className="p-1 rounded-full hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700"
                                                                     >
                                                                         <Plus size={14} />
                                                                     </button>
                                                                 </div>
                                                             </div>
                                                             <div className="text-right">
-                                                                <p className="text-sm font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                                                                <p className="text-sm font-medium dark:text-white">${(item.price * item.quantity).toFixed(2)}</p>
                                                                 <button
                                                                     onClick={() => dispatch(removeItem({ id: item.id }))}
                                                                     className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 mt-1"
@@ -241,7 +246,7 @@ const Navbar: React.FC = () => {
                                             <div className="p-3 border-t border-gray-200 dark:border-gray-700">
                                                 <div className="flex justify-between mb-2">
                                                     <span className="text-sm text-gray-600 dark:text-gray-400">Subtotal:</span>
-                                                    <span className="text-sm font-medium">
+                                                    <span className="text-sm font-medium dark:text-white">
                                                         ${cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2)}
                                                     </span>
                                                 </div>
@@ -288,7 +293,7 @@ const Navbar: React.FC = () => {
                                     <span className="max-w-[100px] truncate text-gray-700 dark:text-gray-300">{user?.username}</span>
                                     <ChevronDown
                                         size={16}
-                                        className={`transition-transform duration-200 ${isProfileMenuOpen ? "rotate-180" : ""}`}
+                                        className={`transition-transform duration-200 ${isProfileMenuOpen ? "rotate-180" : ""} dark:text-white`}
                                     />
                                 </button>
 
@@ -309,17 +314,14 @@ const Navbar: React.FC = () => {
                                                     Dashboard
                                                 </MenuLink>
                                             )}
-                                            <MenuLink to={`/profile/${user?.username}`} icon={<User size={16} />}>
-                                                Profile
-                                            </MenuLink>
-                                            <MenuLink to={`/profile/${user?.username}/history`} icon={<History size={16} />}>
-                                                History
-                                            </MenuLink>
                                             {hasTickets && (
-                                                <MenuLink to={`/profile/${user?.username}/tickets`} icon={<TicketCheck size={16} />}>
+                                                <MenuLink to={`/support`} icon={<TicketCheck size={16} />}>
                                                     Tickets
                                                 </MenuLink>
                                             )}
+                                            <MenuLink to={`/profile/${user?.username}`} icon={<User size={16} />}>
+                                                Profile
+                                            </MenuLink>
                                             <MenuLink to={`/profile/${user?.username}/settings`} icon={<Settings size={16} />}>
                                                 Settings
                                             </MenuLink>

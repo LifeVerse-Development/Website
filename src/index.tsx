@@ -29,11 +29,13 @@ const SupportView = lazy(() => import('./pages/SupportView'));
 const Faq = lazy(() => import('./pages/FAQ'));
 const Status = lazy(() => import('./pages/Status'));
 const Login = lazy(() => import('./pages/Login'));
+const TwoFactorAuth = lazy(() => import('./pages/2FactorAuth'));
 
 /* Users Routes (Required Authentication) */
 const Profile = lazy(() => import('./pages/users/Profile'));
-const History = lazy(() => import('./pages/users/History'));
 const Settings = lazy(() => import('./pages/users/Settings'));
+const Inventory = lazy(() => import("./pages/users/Inventory"));
+const Economy = lazy(() => import("./pages/users/Economy"));
 
 /* Dashboard Changed by Role */
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
@@ -44,12 +46,14 @@ const Guidelines = lazy(() => import('./pages/Guidelines'));
 const Imprint = lazy(() => import('./pages/legal/Imprint'));
 const PrivacyPolicy = lazy(() => import('./pages/legal/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/legal/TermsOfService'));
-const TermsOfUse = lazy(() => import('./pages/legal/TermsOfUse'));
 const GeneralTermsAndConditions = lazy(() => import('./pages/legal/GeneralTermsAndConditions'));
+const TermsOfUse = lazy(() => import('./pages/legal/TermsOfUse'));
 const CookiePolicy = lazy(() => import('./pages/legal/CookiePolicy'));
 
 const Documentation = lazy(() => import('./pages/Documentation'));
-//const Forum = lazy(() => import('./pages/Forum'));
+const Forum = lazy(() => import('./pages/Forum'));
+const ForumTopicView = lazy(() => import("./pages/ForumTopicView"));
+const Chat = lazy(() => import("./pages/Chat"));
 
 const logService = new LogService();
 
@@ -72,6 +76,24 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  return children;
+};
+
+const TwoFAProtectionRoute = ({ children }: { children: JSX.Element }) => {
+  const { isAuthenticated, user, twoFactorVerified } = useSelector((state: RootState) => state.auth);
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user?.twoFactorEnabled && user?.authenticatorSetup?.isEnabled && !twoFactorVerified) {
+    if (location.pathname !== "/2fa") {
+      sessionStorage.setItem("redirectAfter2FA", location.pathname);
+      return <Navigate to="/2fa" replace />;
+    }
   }
 
   return children;
@@ -163,16 +185,18 @@ root.render(
             <Route
               path="/checkout"
               element={
-                <MetaTags
-                  title="Checkout"
-                  description="Learn more about our website and our mission."
-                  keywords="about, company, mission"
-                  author="LifeVerse"
-                  image="/images/about.jpg"
-                  url="https://www.lifeversegame.com/checkout"
-                >
-                  <Checkout />
-                </MetaTags>
+                <ProtectedRoute>
+                  <MetaTags
+                    title="Checkout"
+                    description="Learn more about our website and our mission."
+                    keywords="about, company, mission"
+                    author="LifeVerse"
+                    image="/images/about.jpg"
+                    url="https://www.lifeversegame.com/checkout"
+                  >
+                    <Checkout />
+                  </MetaTags>
+                </ProtectedRoute>
               }
             />
             <Route
@@ -325,39 +349,41 @@ root.render(
                 </MetaTags>
               }
             />
+            <Route
+              path="/2fa"
+              element={
+                <ProtectedRoute>
+                  <MetaTags
+                    title="Two-Factor Authentication"
+                    description="Verify your identity with two-factor authentication"
+                    keywords="2fa, security, authentication, verification"
+                    author="LifeVerse"
+                    image="/images/security.jpg"
+                    url={`https://www.lifeversegame.com/2fa`}
+                  >
+                    <TwoFactorAuth />
+                  </MetaTags>
+                </ProtectedRoute>
+              }
+            />
 
             {/* Users Routes (Required Authentication) */}
             <Route
               path={`/profile/:username`}
               element={
                 <ProtectedRoute>
-                  <MetaTags
-                    title="Profile"
-                    description="Learn more about our website and our mission."
-                    keywords="profile, user, account"
-                    author="LifeVerse"
-                    image="/images/profile.jpg"
-                    url={`https://www.lifeversegame.com/profile/:username`}
-                  >
-                    <Profile />
-                  </MetaTags>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path={`/profile/:username/history`}
-              element={
-                <ProtectedRoute>
-                  <MetaTags
-                    title="Payment History"
-                    description="View your payment history on LifeVerse."
-                    keywords="payment, history, transactions"
-                    author="LifeVerse"
-                    image="/images/payment.jpg"
-                    url={`https://www.lifeversegame.com/profile/:username/history`}
-                  >
-                    <History />
-                  </MetaTags>
+                  <TwoFAProtectionRoute>
+                    <MetaTags
+                      title="Profile"
+                      description="Learn more about our website and our mission."
+                      keywords="profile, user, account"
+                      author="LifeVerse"
+                      image="/images/profile.jpg"
+                      url={`https://www.lifeversegame.com/profile/:username`}
+                    >
+                      <Profile />
+                    </MetaTags>
+                  </TwoFAProtectionRoute>
                 </ProtectedRoute>
               }
             />
@@ -365,16 +391,56 @@ root.render(
               path={`/profile/:username/settings`}
               element={
                 <ProtectedRoute>
-                  <MetaTags
-                    title="Settings"
-                    description="Adjust your account settings on LifeVerse."
-                    keywords="settings, account, preferences"
-                    author="LifeVerse"
-                    image="/images/settings.jpg"
-                    url={`https://www.lifeversegame.com/profile/:username/settings`}
-                  >
-                    <Settings />
-                  </MetaTags>
+                  <TwoFAProtectionRoute>
+                    <MetaTags
+                      title="Settings"
+                      description="Adjust your account settings on LifeVerse."
+                      keywords="settings, account, preferences"
+                      author="LifeVerse"
+                      image="/images/settings.jpg"
+                      url={`https://www.lifeversegame.com/profile/:username/settings`}
+                    >
+                      <Settings />
+                    </MetaTags>
+                  </TwoFAProtectionRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`/profile/:username/inventory`}
+              element={
+                <ProtectedRoute>
+                  <TwoFAProtectionRoute>
+                    <MetaTags
+                      title="Inventory"
+                      description="Adjust your account settings on LifeVerse."
+                      keywords="settings, account, preferences"
+                      author="LifeVerse"
+                      image="/images/settings.jpg"
+                      url={`https://www.lifeversegame.com/profile/:username/inventory`}
+                    >
+                      <Inventory />
+                    </MetaTags>
+                  </TwoFAProtectionRoute>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path={`/profile/:username/economy`}
+              element={
+                <ProtectedRoute>
+                  <TwoFAProtectionRoute>
+                    <MetaTags
+                      title="Economy"
+                      description="Adjust your account settings on LifeVerse."
+                      keywords="settings, account, preferences"
+                      author="LifeVerse"
+                      image="/images/settings.jpg"
+                      url={`https://www.lifeversegame.com/profile/:username/economy`}
+                    >
+                      <Economy />
+                    </MetaTags>
+                  </TwoFAProtectionRoute>
                 </ProtectedRoute>
               }
             />
@@ -383,32 +449,40 @@ root.render(
             <Route
               path="/dashboard"
               element={
-                <MetaTags
-                  title="Dashboard"
-                  description="Learn more about our website and our mission."
-                  keywords="about, company, mission"
-                  author="LifeVerse"
-                  image="/images/about.jpg"
-                  url="https://www.lifeversegame.com/dashboard"
-                >
-                  <Dashboard />
-                </MetaTags>
+                <ProtectedRoute>
+                  <TwoFAProtectionRoute>
+                    <MetaTags
+                      title="Dashboard"
+                      description="Learn more about our website and our mission."
+                      keywords="about, company, mission"
+                      author="LifeVerse"
+                      image="/images/about.jpg"
+                      url="https://www.lifeversegame.com/dashboard"
+                    >
+                      <Dashboard />
+                    </MetaTags>
+                  </TwoFAProtectionRoute>
+                </ProtectedRoute>
               }
             />
 
             <Route
               path="/control_panel"
               element={
-                <MetaTags
-                  title="Control Panel"
-                  description="Learn more about our website and our mission."
-                  keywords="about, company, mission"
-                  author="LifeVerse"
-                  image="/images/about.jpg"
-                  url="https://www.lifeversegame.com/control_panel"
-                >
-                  <ControlPanel />
-                </MetaTags>
+                <ProtectedRoute>
+                  <TwoFAProtectionRoute>
+                    <MetaTags
+                      title="Control Panel"
+                      description="Learn more about our website and our mission."
+                      keywords="about, company, mission"
+                      author="LifeVerse"
+                      image="/images/about.jpg"
+                      url="https://www.lifeversegame.com/control_panel"
+                    >
+                      <ControlPanel />
+                    </MetaTags>
+                  </TwoFAProtectionRoute>
+                </ProtectedRoute>
               }
             />
 
@@ -532,6 +606,55 @@ root.render(
                 >
                   <Documentation />
                 </MetaTags>
+              }
+            />
+            <Route
+              path="/forum"
+              element={
+                <MetaTags
+                  title="Forum"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/forum"
+                >
+                  <Forum />
+                </MetaTags>
+              }
+            />
+            <Route
+              path="/forum/topic/:topicId"
+              element={
+                <MetaTags
+                  title="Forum Topic"
+                  description="Learn more about our website and our mission."
+                  keywords="about, company, mission"
+                  author="LifeVerse"
+                  image="/images/about.jpg"
+                  url="https://www.lifeversegame.com/forum/topic/:topicId"
+                >
+                  <ForumTopicView />
+                </MetaTags>
+              }
+            />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <TwoFAProtectionRoute>
+                    <MetaTags
+                      title="Chat"
+                      description="Learn more about our website and our mission."
+                      keywords="about, company, mission"
+                      author="LifeVerse"
+                      image="/images/about.jpg"
+                      url="https://www.lifeversegame.com/chat"
+                    >
+                      <Chat />
+                    </MetaTags>
+                  </TwoFAProtectionRoute>
+                </ProtectedRoute>
               }
             />
           </Routes>

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { useParams, useNavigate } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
@@ -22,6 +22,7 @@ import {
   RefreshCw,
   ChevronRight,
   MessageSquare,
+  AlertTriangle,
 } from "lucide-react"
 
 interface Product {
@@ -38,90 +39,15 @@ interface Product {
   specifications?: { [key: string]: string }
 }
 
-const products: Product[] = [
-  {
-    id: 1,
-    name: "LifeVerse Premium Pass",
-    description:
-      "Freischaltung exklusiver Features und Belohnungen. Der Premium Pass bietet dir Zugang zu allen Premium-Inhalten und Funktionen in LifeVerse. Genieße exklusive Events, besondere Belohnungen und einzigartige Vorteile, die nur Premium-Mitgliedern zur Verfügung stehen.",
-    price: 29.99,
-    image: "https://fakeimg.pl/600x400",
-    category: "Subscriptions",
-    rating: 4.8,
-    featured: true,
-    details: [
-      "Zugang zu allen Premium-Bereichen",
-      "Monatliche exklusive Belohnungen",
-      "Prioritäts-Support",
-      "Keine Werbung",
-      "Exklusive In-Game-Events",
-    ],
-    specifications: {
-      Laufzeit: "30 Tage",
-      "Automatische Verlängerung": "Ja (kann deaktiviert werden)",
-      Aktivierung: "Sofort nach Kauf",
-      Plattformen: "PC, Mobile, Console",
-    },
-  },
-  {
-    id: 2,
-    name: "In-Game Währung (10.000 Coins)",
-    description:
-      "Nutze Coins für besondere Items und Upgrades. Mit dieser Währung kannst du im Spiel verschiedene Gegenstände, Upgrades und kosmetische Anpassungen erwerben. Ein Muss für jeden Spieler, der schneller vorankommen möchte.",
-    price: 9.99,
-    image: "https://fakeimg.pl/600x400",
-    category: "Currency",
-    rating: 4.5,
-    details: ["10.000 Coins werden sofort gutgeschrieben", "Verwendbar für alle In-Game-Käufe", "Kein Verfallsdatum"],
-    specifications: {
-      Menge: "10.000 Coins",
-      Bonus: "500 Coins (5% Bonus)",
-      Aktivierung: "Sofort nach Kauf",
-      Plattformen: "PC, Mobile, Console",
-    },
-  },
-  {
-    id: 3,
-    name: "Exklusive Fahrzeug-Skins",
-    description:
-      "Personalisiere dein Fahrzeug mit einzigartigen Designs. Diese Sammlung enthält 5 exklusive Fahrzeug-Skins, die deinen Fahrzeugen ein einzigartiges Aussehen verleihen. Zeige deinen Stil und hebe dich von der Masse ab.",
-    price: 4.99,
-    image: "https://fakeimg.pl/600x400",
-    category: "Cosmetics",
-    rating: 4.2,
-    details: [
-      "5 einzigartige Fahrzeug-Designs",
-      "Hohe Auflösung und Detailgrad",
-      "Anpassbar für alle Fahrzeugtypen",
-      "Exklusiv für dieses Paket",
-    ],
-    specifications: {
-      Anzahl: "5 Skins",
-      Kompatibilität: "Alle Fahrzeugtypen",
-      Seltenheit: "Episch",
-      Aktivierung: "Sofort nach Kauf",
-    },
-  },
-  {
-    id: 4,
-    name: "Legendäres Waffenpaket",
-    description: "Sammlung seltener Waffen mit einzigartigen Fähigkeiten.",
-    price: 19.99,
-    image: "https://fakeimg.pl/600x400",
-    category: "Weapons",
-    rating: 4.7,
-    new: true,
-  },
-  {
-    id: 5,
-    name: "Charakter-Boost",
-    description: "Beschleunige deinen Fortschritt mit diesem Boost-Paket.",
-    price: 14.99,
-    image: "https://fakeimg.pl/600x400",
-    category: "Boosters",
-    rating: 4.3,
-  },
-]
+interface Review {
+  id: number
+  name: string
+  avatar: string
+  rating: number
+  date: string
+  title: string
+  comment: string
+}
 
 const ProductView: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -132,12 +58,53 @@ const ProductView: React.FC = () => {
   const [quantity, setQuantity] = useState(1)
   const [activeTab, setActiveTab] = useState<"description" | "specifications" | "reviews">("description")
 
-  const product = products.find((p) => p.id === Number(id))
+  // New state for API data
+  const [product, setProduct] = useState<Product | null>(null)
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([])
+  const [reviews, setReviews] = useState<Review[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Related products (excluding current product)
-  const relatedProducts = products
-    .filter((p) => p.id !== Number(id) && (p.category === product?.category || p.featured))
-    .slice(0, 3)
+  // Fetch product data
+  useEffect(() => {
+    const fetchProductData = async () => {
+      setLoading(true)
+      try {
+        // Fetch product details
+        const productResponse = await fetch(`/api/products/${id}`)
+        if (!productResponse.ok) {
+          throw new Error("Failed to fetch product details")
+        }
+        const productData = await productResponse.json()
+        setProduct(productData)
+
+        // Fetch related products
+        const relatedResponse = await fetch(`/api/products/${id}/related`)
+        if (!relatedResponse.ok) {
+          throw new Error("Failed to fetch related products")
+        }
+        const relatedData = await relatedResponse.json()
+        setRelatedProducts(relatedData)
+
+        // Fetch reviews
+        const reviewsResponse = await fetch(`/api/products/${id}/reviews`)
+        if (!reviewsResponse.ok) {
+          throw new Error("Failed to fetch product reviews")
+        }
+        const reviewsData = await reviewsResponse.json()
+        setReviews(reviewsData)
+
+        setLoading(false)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred")
+        setLoading(false)
+      }
+    }
+
+    if (id) {
+      fetchProductData()
+    }
+  }, [id])
 
   const exchangeRates: { [key: string]: number } = {
     EUR: 1,
@@ -147,7 +114,21 @@ const ProductView: React.FC = () => {
 
   const exchangeRate = exchangeRates[currency as keyof typeof exchangeRates] || exchangeRates.EUR
 
-  if (!product) {
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a]">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[70vh]">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  // Error state
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0f172a]">
         <Navbar />
@@ -158,11 +139,14 @@ const ProductView: React.FC = () => {
           </div>
 
           <div className="relative z-10 min-h-[70vh] flex flex-col items-center justify-center px-4">
+            <div className="text-red-500 mb-6">
+              <AlertTriangle size={64} />
+            </div>
             <h1 className="text-4xl md:text-5xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 mb-6 text-center">
               Produkt nicht gefunden
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 max-w-md text-center mb-8">
-              Das gesuchte Produkt existiert nicht oder wurde entfernt.
+              {error || "Das gesuchte Produkt existiert nicht oder wurde entfernt."}
             </p>
             <button
               onClick={() => navigate("/store")}
@@ -365,7 +349,7 @@ const ProductView: React.FC = () => {
                       ))}
                     </div>
                     <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                      {product.rating.toFixed(1)} (127 Bewertungen)
+                      {product.rating.toFixed(1)} ({reviews.length} Bewertungen)
                     </span>
                   </div>
 
@@ -640,13 +624,17 @@ const ProductView: React.FC = () => {
                           />
                         ))}
                       </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Basierend auf 127 Bewertungen</p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Basierend auf {reviews.length} Bewertungen
+                      </p>
                     </div>
 
                     <div className="flex-1">
                       {[5, 4, 3, 2, 1].map((rating) => {
+                        const reviewsWithRating = reviews.filter((r) => Math.floor(r.rating) === rating)
                         const percentage =
-                          rating === 5 ? 70 : rating === 4 ? 20 : rating === 3 ? 7 : rating === 2 ? 2 : 1
+                          reviews.length > 0 ? Math.round((reviewsWithRating.length / reviews.length) * 100) : 0
+
                         return (
                           <div key={rating} className="flex items-center mb-2">
                             <div className="flex items-center mr-2">
@@ -664,75 +652,56 @@ const ProductView: React.FC = () => {
                   </div>
 
                   <div className="space-y-6">
-                    {[
-                      {
-                        name: "Max Mustermann",
-                        avatar: "/placeholder.svg?height=40&width=40",
-                        rating: 5,
-                        date: "15.03.2023",
-                        title: "Absolut empfehlenswert!",
-                        comment:
-                          "Eines der besten Produkte, die ich je gekauft habe. Die Qualität ist hervorragend und der Preis ist angemessen. Würde es jederzeit wieder kaufen.",
-                      },
-                      {
-                        name: "Anna Schmidt",
-                        avatar: "/placeholder.svg?height=40&width=40",
-                        rating: 4,
-                        date: "02.02.2023",
-                        title: "Sehr gutes Produkt mit kleinen Mängeln",
-                        comment:
-                          "Ich bin insgesamt sehr zufrieden mit dem Produkt. Es gibt ein paar kleine Dinge, die verbessert werden könnten, aber nichts, was mich davon abhalten würde, es zu empfehlen.",
-                      },
-                      {
-                        name: "Thomas Müller",
-                        avatar: "/placeholder.svg?height=40&width=40",
-                        rating: 5,
-                        date: "18.01.2023",
-                        title: "Perfekt für meine Bedürfnisse",
-                        comment:
-                          "Genau das, was ich gesucht habe. Die Funktionen sind genau wie beschrieben und die Benutzerfreundlichkeit ist top. Sehr zufrieden mit meinem Kauf.",
-                      },
-                    ].map((review, index) => (
-                      <div key={index} className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0">
-                        <div className="flex items-start">
-                          <img
-                            src={review.avatar || "/placeholder.svg"}
-                            alt={review.name}
-                            className="w-10 h-10 rounded-full mr-4"
-                          />
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <h4 className="text-lg font-medium text-gray-900 dark:text-white">{review.name}</h4>
-                              <span className="text-sm text-gray-500 dark:text-gray-400">{review.date}</span>
-                            </div>
-                            <div className="flex mt-1 mb-2">
-                              {[...Array(5)].map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`h-4 w-4 ${
-                                    i < review.rating
-                                      ? "text-yellow-400 fill-yellow-400"
-                                      : "text-gray-300 dark:text-gray-600"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <h5 className="font-medium text-gray-900 dark:text-white mb-2">{review.title}</h5>
-                            <p className="text-gray-700 dark:text-gray-300">{review.comment}</p>
-                            <div className="flex items-center mt-3 space-x-4">
-                              <button className="flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                                <MessageSquare className="h-4 w-4 mr-1" />
-                                Antworten
-                              </button>
-                              <button className="flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                                <Heart className="h-4 w-4 mr-1" />
-                                Hilfreich
-                              </button>
+                    {reviews.length > 0 ? (
+                      reviews.map((review) => (
+                        <div
+                          key={review.id}
+                          className="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-0"
+                        >
+                          <div className="flex items-start">
+                            <img
+                              src={review.avatar || "/placeholder.svg"}
+                              alt={review.name}
+                              className="w-10 h-10 rounded-full mr-4"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-lg font-medium text-gray-900 dark:text-white">{review.name}</h4>
+                                <span className="text-sm text-gray-500 dark:text-gray-400">{review.date}</span>
+                              </div>
+                              <div className="flex mt-1 mb-2">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star
+                                    key={i}
+                                    className={`h-4 w-4 ${
+                                      i < review.rating
+                                        ? "text-yellow-400 fill-yellow-400"
+                                        : "text-gray-300 dark:text-gray-600"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <h5 className="font-medium text-gray-900 dark:text-white mb-2">{review.title}</h5>
+                              <p className="text-gray-700 dark:text-gray-300">{review.comment}</p>
+                              <div className="flex items-center mt-3 space-x-4">
+                                <button className="flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                                  <MessageSquare className="h-4 w-4 mr-1" />
+                                  Antworten
+                                </button>
+                                <button className="flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                                  <Heart className="h-4 w-4 mr-1" />
+                                  Hilfreich
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <p className="text-gray-500 dark:text-gray-400">Noch keine Bewertungen vorhanden.</p>
                       </div>
-                    ))}
+                    )}
                   </div>
 
                   <div className="mt-6 text-center">

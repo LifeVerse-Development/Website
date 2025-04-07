@@ -1,6 +1,7 @@
 import type React from "react"
 import { Link } from "react-router-dom"
-import { Instagram, Twitter, Youtube, Twitch, MessageSquare } from "lucide-react"
+import { Instagram, Twitter, Youtube, Twitch } from "lucide-react"
+import { FaDiscord } from 'react-icons/fa';
 
 const TikTokIcon: React.FC<{ size?: number }> = ({ size = 24 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -63,7 +64,7 @@ const Footer: React.FC = () => {
                             <SocialIcon href="https://twitch.tv/@lifeverse_game" icon={<Twitch size={18} />} label="Twitch" color="bg-purple-600" />
                             <SocialIcon
                                 href="https://discord.com/lifeverse_game"
-                                icon={<MessageSquare size={18} />}
+                                icon={<FaDiscord size={18} />}
                                 label="Discord"
                                 color="bg-indigo-600"
                             />
@@ -79,9 +80,9 @@ const Footer: React.FC = () => {
                         </h4>
                         <ul className="space-y-3">
                             <FooterLink to="/news">News</FooterLink>
-                            <FooterLink to="/about">About Us</FooterLink>
                             <FooterLink to="/downloads">Downloads</FooterLink>
-                            <FooterLink to="/support">Support</FooterLink>
+                            <FooterLink to="/about">About Us</FooterLink>
+                            <FooterLink to="/contact">Contact</FooterLink>
                         </ul>
                     </div>
 

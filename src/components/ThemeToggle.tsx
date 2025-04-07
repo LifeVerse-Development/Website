@@ -1,31 +1,47 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toggleTheme, setTheme } from '../stores/themeSlice';
-import { RootState } from '../stores/store';
+import React, { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { toggleTheme, setTheme } from "../stores/themeSlice";
+import { RootState } from "../stores/store";
 
 const ThemeToggle: React.FC = () => {
     const dispatch = useDispatch();
     const theme = useSelector((state: RootState) => state.theme.theme);
+    const { user, csrfToken } = useSelector((state: RootState) => state.auth);
 
     useEffect(() => {
-        const storedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-
+        const storedTheme = localStorage.getItem("theme") as "light" | "dark" | null;
         if (storedTheme && storedTheme !== theme) {
             dispatch(setTheme(storedTheme));
         }
     }, [dispatch, theme]);
 
     useEffect(() => {
-        if (theme) {
-            localStorage.setItem('theme', theme);
-
-            if (theme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
+        if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
         }
-    }, [theme]);
+
+        localStorage.setItem("theme", theme);
+
+        if (user?.userId && user?.accessToken) {
+            fetch(`http://localhost:3001/api/users/${user.userId}/settings/preferences`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${user.accessToken}`,
+                    csrfToken: csrfToken || '',
+                },
+                body: JSON.stringify({ theme }),
+            })
+            .then(response => {
+                if (!response.ok) throw new Error("Failed to update theme");
+            })
+            .catch(error => {
+                console.error("Error updating theme:", error);
+            });
+        }
+    }, [theme, user, csrfToken]);
 
     const handleThemeToggle = () => {
         dispatch(toggleTheme());
@@ -36,7 +52,7 @@ const ThemeToggle: React.FC = () => {
             onClick={handleThemeToggle}
             className="p-2 rounded-md focus:outline-none bg-primary text-lightText dark:bg-secondary dark:text-darkText"
         >
-            {theme === 'light' ? (
+            {theme === "dark" ? (
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"

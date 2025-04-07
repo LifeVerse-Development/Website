@@ -6,7 +6,28 @@ import { motion } from "framer-motion"
 import { useNavigate, Link } from "react-router-dom"
 import Navbar from "../components/Navbar"
 import Footer from "../components/Footer"
-import { Play, Download, Users, Globe, HomeIcon, Briefcase, Car, ShoppingBag, MessageCircle, ChevronRight, Star, ArrowRight } from 'lucide-react'
+import {
+  Play,
+  Download,
+  Users,
+  Globe,
+  HomeIcon,
+  Briefcase,
+  Car,
+  ShoppingBag,
+  MessageCircle,
+  ChevronRight,
+  Star,
+  ArrowRight,
+} from "lucide-react"
+
+interface BlogPost {
+  _id: string
+  title: string
+  description: string
+  image?: string
+  createdAt: string
+}
 
 const Home: React.FC = () => {
   const navigate = useNavigate()
@@ -17,6 +38,9 @@ const Home: React.FC = () => {
     minutes: 45,
     seconds: 0,
   })
+
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([])
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true)
 
   // Countdown timer effect
   useEffect(() => {
@@ -37,6 +61,46 @@ const Home: React.FC = () => {
 
     return () => clearInterval(timer)
   }, [])
+
+  // Fetch blog posts from API
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      try {
+        setIsLoadingPosts(true)
+        const response = await fetch("http://localhost:3001/api/blogs")
+
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`)
+        }
+
+        const data = await response.json()
+
+        // Sort posts by createdAt date in descending order (newest first)
+        data.sort((a: BlogPost, b: BlogPost) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        })
+
+        // Get the latest 3 posts
+        setBlogPosts(data.slice(0, 3))
+      } catch (err) {
+        console.error("Error fetching blog posts:", err)
+      } finally {
+        setIsLoadingPosts(false)
+      }
+    }
+
+    fetchBlogPosts()
+  }, [])
+
+  // Helper function to format date
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }
+    return new Date(dateString).toLocaleDateString("de-DE", options)
+  }
 
   // Animation variants
   const containerVariants = {
@@ -137,11 +201,7 @@ const Home: React.FC = () => {
             >
               <div className="relative mx-auto max-w-md lg:max-w-none">
                 <div className="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl">
-                  <img
-                    src="/logo.png"
-                    alt="LifeVerse Game"
-                    className="w-full h-full object-cover"
-                  />
+                  <img src="/logo.png" alt="LifeVerse Game" className="w-full h-full object-cover" />
                 </div>
 
                 {/* Floating badges */}
@@ -696,9 +756,7 @@ const Home: React.FC = () => {
                       dieser wachsenden Community!
                     </p>
                     <div className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 transition-colors">
-                      <a href="/login">
-                        Kostenlos starten
-                      </a>
+                      <a href="/login">Kostenlos starten</a>
                     </div>
                   </div>
                 </div>
@@ -718,62 +776,44 @@ const Home: React.FC = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                id: 1,
-                title: "Neues Sommerupdate: Strandleben",
-                date: "15. Juli 2023",
-                image: "https://fakeimg.pl/600x400?text=Summer",
-                excerpt: "Entdecke neue Strandaktivitäten, Wassersport und Sommerfestivals in unserem neuesten Update.",
-              },
-              {
-                id: 2,
-                title: "Karriere-Erweiterung: Kreative Berufe",
-                date: "2. Juni 2023",
-                image: "https://fakeimg.pl/600x400?text=Careers",
-                excerpt:
-                  "Werde Künstler, Designer, Musiker oder Schriftsteller mit unserer neuen Erweiterung für kreative Karrieren.",
-              },
-              {
-                id: 3,
-                title: "Community-Event: Virtuelles Konzert",
-                date: "28. Mai 2023",
-                image: "https://fakeimg.pl/600x400?text=Concert",
-                excerpt:
-                  "Nimm am größten virtuellen Konzert des Jahres teil, mit Live-Auftritten echter Künstler in LifeVerse.",
-              },
-            ].map((news, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-gray-50 dark:bg-gray-700 rounded-2xl shadow-md overflow-hidden"
-              >
-                <div className="h-48 overflow-hidden">
-                  <img src={news.image || "/placeholder.svg"} alt={news.title} className="w-full h-full object-cover" />
-                </div>
-                <div className="p-6">
-                  <p className="text-sm text-blue-600 dark:text-blue-400 mb-2">{news.date}</p>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">{news.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">{news.excerpt}</p>
-                  <button className="text-blue-600 dark:text-blue-400 font-medium hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
-                    <a href={`/news/${news.id}`}>
-                      Weiterlesen →
-                    </a>
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+          {isLoadingPosts ? (
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {blogPosts.map((post, index) => (
+                <motion.div
+                  key={post._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="bg-gray-50 dark:bg-gray-700 rounded-2xl shadow-md overflow-hidden"
+                >
+                  <div className="h-48 overflow-hidden">
+                    <img
+                      src={post.image || "/placeholder.svg?height=400&width=600"}
+                      alt={post.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="p-6">
+                    <p className="text-sm text-blue-600 dark:text-blue-400 mb-2">{formatDate(post.createdAt)}</p>
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">{post.title}</h3>
+                    <p className="text-gray-600 dark:text-gray-400 mb-4">{post.description}</p>
+                    <button className="text-blue-600 dark:text-blue-400 font-medium hover:text-blue-800 dark:hover:text-blue-300 transition-colors">
+                      <a href={`/news/${post._id}`}>Weiterlesen →</a>
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
 
           <div className="mt-12 text-center">
             <button className="px-6 py-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium rounded-xl shadow-md hover:shadow-lg border border-gray-200 dark:border-gray-600 transition-all">
-              <a href="/news">
-                Alle News anzeigen
-              </a>
+              <a href="/news">Alle News anzeigen</a>
             </button>
           </div>
         </div>
@@ -843,3 +883,4 @@ const Home: React.FC = () => {
 }
 
 export default Home
+
